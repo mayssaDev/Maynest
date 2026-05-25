@@ -10,23 +10,23 @@
   <!-- ============================================ -->
   <style>
     :root {
-      --color-bg:        #f0f7ff;   /* Fond principal */
-      --color-card:      #ffffff;   /* Fond des cartes */
-      --color-border:    #daeaf7;   /* Bordures */
-      --color-primary:   #0ea5e9;   /* Couleur principale (bleu) */
-      --color-green:     #0d9488;   /* Turquoise (payé, actif) */
-      --color-red:       #e11d48;   /* Rouge (retard, alerte) */
-      --color-purple:    #7c3aed;   /* Violet */
-      --color-orange:    #f59e0b;   /* Or/Ambre */
-      --color-text:      #0f172a;   /* Texte principal */
-      --color-text-muted:#64748b;   /* Texte secondaire */
+      --color-bg:        #FAF6F1;   /* Fond beige crème */
+      --color-card:      #FFFFFF;   /* Fond des cartes */
+      --color-border:    #E8DDD4;   /* Bordures beige */
+      --color-primary:   #7D2340;   /* Bordeaux principal */
+      --color-green:     #2D7A4F;   /* Vert succès */
+      --color-red:       #C0392B;   /* Rouge alerte */
+      --color-purple:    #6B3FA0;   /* Violet */
+      --color-orange:    #C9A96E;   /* Or/Champagne */
+      --color-text:      #2C1810;   /* Texte principal foncé */
+      --color-text-muted:#8B7355;   /* Texte secondaire chaud */
 
       /* Couleurs des 5 chambres */
-      --room1: #0ea5e9;
-      --room2: #0d9488;
-      --room3: #7c3aed;
-      --room4: #f59e0b;
-      --room5: #e11d48;
+      --room1: #7D2340;
+      --room2: #2D7A4F;
+      --room3: #C9A96E;
+      --room4: #6B3FA0;
+      --room5: #C0392B;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,28 +40,29 @@
 
     /* ---- HEADER ---- */
     .header {
-      background: linear-gradient(135deg, #0ea5e9, #0d9488);
+      background: linear-gradient(135deg, #5C1A30, #7D2340);
       border-bottom: none;
-      padding: 1.2rem 1.5rem;
+      padding: 0.9rem 1.5rem;
       position: sticky;
       top: 0;
       z-index: 100;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 20px rgba(14,165,233,0.25);
+      box-shadow: 0 4px 20px rgba(93,26,48,0.3);
     }
     .header-title {
       font-size: 1.4rem;
       font-weight: 700;
-      color: #ffffff;
-      letter-spacing: 0.02em;
+      color: #FAF6F1;
+      letter-spacing: 0.06em;
+      font-family: Georgia, serif;
     }
     .header-sub {
-      font-size: 0.7rem;
-      color: rgba(255,255,255,0.75);
+      font-size: 0.68rem;
+      color: #C9A96E;
       font-family: monospace;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
     }
     .free-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
     .free-badge {
@@ -74,11 +75,11 @@
     /* ---- NAV ---- */
     .nav {
       display: flex;
-      border-bottom: 1px solid var(--color-border);
+      border-bottom: 2px solid #E8DDD4;
       overflow-x: auto;
       scrollbar-width: none;
-      background: #ffffff;
-      box-shadow: 0 2px 8px rgba(14,165,233,0.08);
+      background: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(93,26,48,0.06);
     }
     .nav::-webkit-scrollbar { display: none; }
     .nav-btn {
@@ -86,8 +87,8 @@
       padding: 0.85rem 1rem;
       background: none;
       border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--color-text-muted);
+      border-bottom: 2.5px solid transparent;
+      color: #8B7355;
       cursor: pointer;
       font-size: 0.78rem;
       font-family: monospace;
@@ -96,8 +97,8 @@
       transition: color 0.15s;
     }
     .nav-btn.active {
-      color: var(--color-primary);
-      border-bottom-color: var(--color-primary);
+      color: #7D2340;
+      border-bottom-color: #7D2340;
       font-weight: 700;
     }
 
@@ -217,13 +218,13 @@
       padding: 1rem;
     }
     .modal-box {
-      background: #ffffff;
-      border: 1px solid var(--color-border);
+      background: #FFFFFF;
+      border: 1px solid #E8DDD4;
       border-radius: 20px;
       width: 100%; max-width: 560px;
       max-height: 90vh; overflow-y: auto;
       padding: 2rem;
-      box-shadow: 0 20px 60px rgba(14,165,233,0.2);
+      box-shadow: 0 20px 60px rgba(93,26,48,0.15);
     }
     .modal-header {
       display: flex; justify-content: space-between; align-items: center;
@@ -245,19 +246,19 @@
     }
     .form-input, .form-select, .form-textarea {
       width: 100%;
-      background: #f8fafc;
-      border: 1.5px solid var(--color-border);
+      background: #FAF6F1;
+      border: 1.5px solid #E8DDD4;
       border-radius: 10px;
       padding: 0.65rem 0.9rem;
-      color: var(--color-text);
+      color: #2C1810;
       font-size: 0.95rem;
       outline: none;
       font-family: inherit;
       transition: border-color 0.15s;
     }
     .form-input:focus, .form-select:focus, .form-textarea:focus {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(14,165,233,0.1);
+      border-color: #7D2340;
+      box-shadow: 0 0 0 3px rgba(125,35,64,0.1);
     }
     .form-textarea { resize: vertical; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
@@ -327,14 +328,14 @@
     /* ---- LOADING ---- */
     #loading {
       position: fixed; inset: 0;
-      background: linear-gradient(135deg, #0ea5e9, #0d9488);
+      background: linear-gradient(135deg, #5C1A30, #7D2340);
       display: flex; align-items: center; justify-content: center;
       flex-direction: column; gap: 1rem; z-index: 9999;
     }
     .spinner {
       width: 40px; height: 40px;
-      border: 3px solid rgba(255,255,255,0.3);
-      border-top-color: #ffffff;
+      border: 3px solid rgba(201,169,110,0.3);
+      border-top-color: #C9A96E;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -348,7 +349,8 @@
 <!-- LOADING -->
 <div id="loading">
   <div class="spinner"></div>
-  <div style="color: #ffffff; font-family: monospace; font-size: 0.9rem;">Chargement MayNest...</div>
+  <div style="color: #C9A96E; font-family: Georgia,serif; font-size: 1rem; letter-spacing:0.1em;">MAYNEST</div>
+  <div style="color: rgba(201,169,110,0.6); font-family: monospace; font-size: 0.75rem; letter-spacing:0.15em;">Chargement...</div>
 </div>
 
 <!-- APP -->
@@ -356,9 +358,20 @@
 
   <!-- HEADER -->
   <div class="header">
-    <div>
-      <div class="header-title">🏠 MayNest</div>
-      <div class="header-sub">GESTION LOCATIVE · 5 CHAMBRES</div>
+    <div style="display:flex;align-items:center;gap:0.9rem">
+      <!-- Logo MayNest -->
+      <svg width="44" height="44" viewBox="0 0 44 44" style="flex-shrink:0">
+        <rect width="44" height="44" fill="rgba(255,255,255,0.1)" rx="10"/>
+        <rect x="11" y="22" width="22" height="16" fill="#FAF6F1" rx="1"/>
+        <polygon points="9,22 22,10 35,22" fill="#C9A96E"/>
+        <rect x="15" y="26" width="5" height="5" fill="#7D2340" rx="1" opacity="0.7"/>
+        <rect x="24" y="26" width="5" height="5" fill="#7D2340" rx="1" opacity="0.7"/>
+        <rect x="19" y="30" width="6" height="8" fill="#C9A96E" rx="1"/>
+      </svg>
+      <div>
+        <div class="header-title">MAYNEST</div>
+        <div class="header-sub">GESTION LOCATIVE · 5 CHAMBRES</div>
+      </div>
     </div>
     <div class="free-badges" id="free-badges"></div>
   </div>
@@ -992,7 +1005,7 @@ function tenantForm(t, isEdit) {
       <div class="form-group"><label class="form-label">Date d'entrée</label><input class="form-input" type="date" id="f-entry" value="${t.entryDate||''}"></div>
       <div class="form-group"><label class="form-label">Date de sortie</label><input class="form-input" type="date" id="f-exit" value="${t.exitDate||''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Loyer mensuel (€)</label><input class="form-input" type="text" inputmode="numeric" id="f-rent" value="${t.rent||''}"></div>
+    <div class="form-group"><label class="form-label">Loyer mensuel (€)</label><input class="form-input" type="number" id="f-rent" value="${t.rent||''}"></div>
     <div class="form-group"><label class="form-label">Statut</label><select class="form-select" id="f-status">${statusOpts}</select></div>
     <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input form-textarea" id="f-notes">${t.notes||''}</textarea></div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">

@@ -992,7 +992,7 @@ function tenantForm(t, isEdit) {
       <div class="form-group"><label class="form-label">Date d'entrée</label><input class="form-input" type="date" id="f-entry" value="${t.entryDate||''}"></div>
       <div class="form-group"><label class="form-label">Date de sortie</label><input class="form-input" type="date" id="f-exit" value="${t.exitDate||''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Loyer mensuel (€)</label><input class="form-input" type="number" id="f-rent" value="${t.rent||''}"></div>
+    <div class="form-group"><label class="form-label">Loyer mensuel (€)</label><input class="form-input" type="text" inputmode="numeric" id="f-rent" value="${t.rent||''}"></div>
     <div class="form-group"><label class="form-label">Statut</label><select class="form-select" id="f-status">${statusOpts}</select></div>
     <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input form-textarea" id="f-notes">${t.notes||''}</textarea></div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">

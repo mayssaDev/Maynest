@@ -4,9 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MayNest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiBmaWxsPSIjN0QyMzQwIiByeD0iODAiLz4KPHJlY3QgeD0iMTU2IiB5PSIyODAiIHdpZHRoPSIyMDAiIGhlaWdodD0iMTcwIiBmaWxsPSIjRkFGNkYxIiByeD0iNiIvPgo8cG9seWdvbiBwb2ludHM9IjEzMCwyODAgMjU2LDE1NSAzODIsMjgwIiBmaWxsPSIjQzlBOTZFIi8+CjxyZWN0IHg9IjMwOCIgeT0iMTc4IiB3aWR0aD0iMjIiIGhlaWdodD0iNTUiIGZpbGw9IiM1QzFBMzAiIHJ4PSIzIi8+CjxyZWN0IHg9IjE3OCIgeT0iMzAzIiB3aWR0aD0iNDQiIGhlaWdodD0iMzgiIGZpbGw9IiM3RDIzNDAiIHJ4PSI0IiBvcGFjaXR5PSIwLjciLz4KPHJlY3QgeD0iMjQwIiB5PSIzMDMiIHdpZHRoPSI0NCIgaGVpZ2h0PSIzOCIgZmlsbD0iIzdEMjM0MCIgcng9IjQiIG9wYWNpdHk9IjAuNyIvPgo8cmVjdCB4PSIzMDIiIHk9IjMwMyIgd2lkdGg9IjQ0IiBoZWlnaHQ9IjM4IiBmaWxsPSIjQzlBOTZFIiByeD0iNCIgb3BhY2l0eT0iMC44NSIvPgo8cmVjdCB4PSIxNzgiIHk9IjM1NSIgd2lkdGg9IjQ0IiBoZWlnaHQ9IjM4IiBmaWxsPSIjQzlBOTZFIiByeD0iNCIgb3BhY2l0eT0iMC44NSIvPgo8cmVjdCB4PSIyNDAiIHk9IjM1NSIgd2lkdGg9IjQ0IiBoZWlnaHQ9IjM4IiBmaWxsPSIjN0QyMzQwIiByeD0iNCIgb3BhY2l0eT0iMC43Ii8+CjxyZWN0IHg9IjMwMiIgeT0iMzU1IiB3aWR0aD0iNDQiIGhlaWdodD0iMzgiIGZpbGw9IiM3RDIzNDAiIHJ4PSI0IiBvcGFjaXR5PSIwLjciLz4KPHJlY3QgeD0iMjMyIiB5PSIzOTIiIHdpZHRoPSI0OCIgaGVpZ2h0PSI1OCIgZmlsbD0iI0M5QTk2RSIgcng9IjQiLz4KPGNpcmNsZSBjeD0iMjcyIiBjeT0iNDIyIiByPSI1IiBmaWxsPSIjN0QyMzQwIi8+Cjwvc3ZnPg==">
-  <meta name="theme-color" content="#7D2340">
+  <meta name="theme-color" content="#1A2B4A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MayNest">
@@ -16,76 +18,111 @@
   <!-- ============================================ -->
   <style>
     :root {
-      --color-bg:        #FAF6F1;   /* Fond beige crème */
+      --color-bg:        #EEF2F8;   /* Fond bleu clair */
       --color-card:      #FFFFFF;   /* Fond des cartes */
-      --color-border:    #E8DDD4;   /* Bordures beige */
-      --color-primary:   #7D2340;   /* Bordeaux principal */
-      --color-green:     #2D7A4F;   /* Vert succès */
-      --color-red:       #C0392B;   /* Rouge alerte */
-      --color-purple:    #6B3FA0;   /* Violet */
-      --color-orange:    #C9A96E;   /* Or/Champagne */
-      --color-text:      #2C1810;   /* Texte principal foncé */
-      --color-text-muted:#8B7355;   /* Texte secondaire chaud */
+      --color-border:    #B5D4F4;   /* Bordures bleues */
+      --color-primary:   #1A2B4A;   /* Bleu nuit principal */
+      --color-green:     #2E7D8C;   /* Bleu pétrole (succès) */
+      --color-red:       #7D2340;   /* Bordeaux (alerte) */
+      --color-purple:    #2E508C;   /* Bleu marine */
+      --color-orange:    #D4A843;   /* Or/Champagne */
+      --color-text:      #042C53;   /* Texte principal */
+      --color-text-muted:#5B7FA6;   /* Texte secondaire */
 
       /* Couleurs des 5 chambres */
       --room1: #7D2340;
-      --room2: #2D7A4F;
-      --room3: #C9A96E;
-      --room4: #6B3FA0;
-      --room5: #C0392B;
+      --room2: #1A2B4A;
+      --room3: #2E508C;
+      --room4: #D4A843;
+      --room5: #2E7D8C;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--color-bg);
-      color: var(--color-text);
+      background: #EEF2F8;
+      color: #042C53;
       font-family: 'Segoe UI', system-ui, sans-serif;
       min-height: 100vh;
     }
 
+    /* ---- PAGE TITLE ---- */
+    .page-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-style: italic;
+      margin-bottom: 1.5rem;
+      color: #0C447C;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+    }
+
     /* ---- HEADER ---- */
     .header {
-      background: linear-gradient(135deg, #5C1A30, #7D2340);
+      background: #1A2B4A;
       border-bottom: none;
-      padding: 0.9rem 1.5rem;
+      padding: 0.7rem 1rem;
       position: sticky;
       top: 0;
       z-index: 100;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 20px rgba(93,26,48,0.3);
+      box-shadow: 0 4px 20px rgba(26,43,74,0.35);
+      min-height: 60px;
+      gap: 0.5rem;
     }
     .header-title {
-      font-size: 1.4rem;
-      font-weight: 700;
+      font-size: 1.2rem;
+      font-weight: 600;
+      font-style: italic;
       color: #FAF6F1;
       letter-spacing: 0.06em;
-      font-family: Georgia, serif;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      white-space: nowrap;
     }
     .header-sub {
-      font-size: 0.68rem;
+      font-size: 0.6rem;
       color: #C9A96E;
       font-family: monospace;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
     }
-    .free-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+    .header-logo-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      flex-shrink: 0;
+    }
+    .header-text-wrapper {
+      border-left: 2px solid #C9A96E;
+      padding-left: 0.7rem;
+    }
+    .free-badges {
+      display: flex;
+      gap: 0.3rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      max-width: 50%;
+    }
     .free-badge {
-      font-size: 0.7rem;
-      padding: 0.2rem 0.5rem;
+      font-size: 0.6rem;
+      padding: 0.15rem 0.4rem;
       border-radius: 4px;
       font-family: monospace;
+      background: transparent;
+      color: #FAF6F1;
+      border: 1px solid rgba(255,255,255,0.4);
+      white-space: nowrap;
     }
 
     /* ---- NAV ---- */
     .nav {
       display: flex;
-      border-bottom: 2px solid #E8DDD4;
+      border-bottom: 1.5px solid #c5d4e8;
       overflow-x: auto;
       scrollbar-width: none;
       background: #FFFFFF;
-      box-shadow: 0 2px 8px rgba(93,26,48,0.06);
+      box-shadow: 0 2px 8px rgba(26,43,74,0.06);
     }
     .nav::-webkit-scrollbar { display: none; }
     .nav-btn {
@@ -94,7 +131,7 @@
       background: none;
       border: none;
       border-bottom: 2.5px solid transparent;
-      color: #8B7355;
+      color: #8a9ab5;
       cursor: pointer;
       font-size: 0.78rem;
       font-family: monospace;
@@ -103,8 +140,8 @@
       transition: color 0.15s;
     }
     .nav-btn.active {
-      color: #7D2340;
-      border-bottom-color: #7D2340;
+      color: #1A2B4A;
+      border-bottom-color: #C9A96E;
       font-weight: 700;
     }
 
@@ -113,15 +150,15 @@
 
     /* ---- CARDS ---- */
     .card {
-      background: var(--color-card);
-      border: 1px solid var(--color-border);
-      border-radius: 16px;
+      background: #FFFFFF;
+      border: 0.5px solid #B5D4F4;
+      border-radius: 12px;
       padding: 1.2rem;
       margin-bottom: 0.8rem;
-      box-shadow: 0 2px 12px rgba(14,165,233,0.07);
+      box-shadow: 0 2px 8px rgba(26,43,74,0.06);
       transition: box-shadow 0.2s;
     }
-    .card:hover { box-shadow: 0 4px 20px rgba(14,165,233,0.15); }
+    .card:hover { box-shadow: 0 4px 16px rgba(26,43,74,0.12); }
     .card-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
@@ -129,11 +166,11 @@
       margin-bottom: 1.5rem;
     }
     .kpi-card {
-      background: var(--color-card);
-      border-radius: 16px;
-      padding: 1.2rem;
-      border: 1px solid;
-      box-shadow: 0 2px 12px rgba(14,165,233,0.08);
+      background: #FFFFFF;
+      border-radius: 12px;
+      padding: 1.1rem;
+      border: 0.5px solid #B5D4F4;
+      box-shadow: 0 2px 8px rgba(26,43,74,0.06);
     }
     .kpi-value {
       font-size: 1.45rem;
@@ -167,13 +204,13 @@
       font-family: monospace;
       border: 1.5px solid;
     }
-    .btn-primary   { background: var(--color-primary); color: #111; border-color: var(--color-primary); }
-    .btn-green     { background: var(--color-green);   color: #111; border-color: var(--color-green); }
-    .btn-outline-y { background: transparent; color: var(--color-primary); border-color: var(--color-primary); }
-    .btn-outline-g { background: transparent; color: var(--color-green);   border-color: var(--color-green); }
-    .btn-outline-r { background: transparent; color: var(--color-red);     border-color: var(--color-red); }
-    .btn-outline-p { background: transparent; color: var(--color-purple);  border-color: var(--color-purple); }
-    .btn-outline-o { background: transparent; color: var(--color-orange);  border-color: var(--color-orange); }
+    .btn-primary   { background: #1A2B4A; color: #ffffff; border-color: #1A2B4A; border-radius: 20px; }
+    .btn-green     { background: var(--color-green); color: #fff; border-color: var(--color-green); border-radius: 20px; }
+    .btn-outline-y { background: transparent; color: #1A2B4A; border-color: #1A2B4A; border-radius: 20px; }
+    .btn-outline-g { background: transparent; color: var(--color-green); border-color: var(--color-green); border-radius: 20px; }
+    .btn-outline-r { background: transparent; color: var(--color-red); border-color: var(--color-red); border-radius: 20px; }
+    .btn-outline-p { background: transparent; color: var(--color-purple); border-color: var(--color-purple); border-radius: 20px; }
+    .btn-outline-o { background: transparent; color: #BA7517; border-color: #EF9F27; border-radius: 20px; }
 
     /* ---- BADGES ---- */
     .badge {
@@ -189,7 +226,7 @@
     .section-title {
       font-size: 0.75rem;
       font-family: monospace;
-      color: #444;
+      color: #8a9ab5;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       margin-bottom: 0.8rem;
@@ -200,8 +237,10 @@
     .page-title {
       font-size: 1.6rem;
       font-weight: 700;
+      font-style: italic;
       margin-bottom: 1.5rem;
-      color: var(--color-text);
+      color: #0C447C;
+      font-family: 'Cormorant Garamond', Georgia, serif;
     }
 
     /* ---- ALERT ---- */
@@ -217,7 +256,7 @@
     /* ---- MODAL ---- */
     .modal-overlay {
       position: fixed; inset: 0;
-      background: rgba(15,23,42,0.5);
+      background: rgba(26,43,74,0.6);
       backdrop-filter: blur(4px);
       z-index: 1000;
       display: flex; align-items: center; justify-content: center;
@@ -225,59 +264,59 @@
     }
     .modal-box {
       background: #FFFFFF;
-      border: 1px solid #E8DDD4;
+      border: 0.5px solid #B5D4F4;
       border-radius: 20px;
       width: 100%; max-width: 560px;
       max-height: 90vh; overflow-y: auto;
       padding: 2rem;
-      box-shadow: 0 20px 60px rgba(93,26,48,0.15);
+      box-shadow: 0 20px 60px rgba(26,43,74,0.2);
     }
     .modal-header {
       display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 1.5rem;
     }
-    .modal-title { font-size: 1.3rem; font-weight: 700; color: var(--color-text); }
+    .modal-title { font-size: 1.3rem; font-weight: 600; font-style:italic; color: #0C447C; font-family:'Cormorant Garamond',serif; }
     .modal-close {
       background: none; border: none;
-      color: #888; font-size: 1.5rem; cursor: pointer;
+      color: #8a9ab5; font-size: 1.5rem; cursor: pointer;
     }
 
     /* ---- FORM ---- */
     .form-group { margin-bottom: 1rem; }
     .form-label {
       display: block;
-      color: #aaa; font-size: 0.78rem;
+      color: #8a9ab5; font-size: 0.78rem;
       letter-spacing: 0.08em; text-transform: uppercase;
       margin-bottom: 0.4rem; font-family: monospace;
     }
     .form-input, .form-select, .form-textarea {
       width: 100%;
-      background: #FAF6F1;
-      border: 1.5px solid #E8DDD4;
+      background: #F8FAFD;
+      border: 1.5px solid #B5D4F4;
       border-radius: 10px;
       padding: 0.65rem 0.9rem;
-      color: #2C1810;
+      color: #042C53;
       font-size: 0.95rem;
       outline: none;
       font-family: inherit;
       transition: border-color 0.15s;
     }
     .form-input:focus, .form-select:focus, .form-textarea:focus {
-      border-color: #7D2340;
-      box-shadow: 0 0 0 3px rgba(125,35,64,0.1);
+      border-color: #1A2B4A;
+      box-shadow: 0 0 0 3px rgba(26,43,74,0.1);
     }
     .form-textarea { resize: vertical; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
 
     /* ---- ROOM CARDS ---- */
     .room-card {
-      background: var(--color-card);
-      border-radius: 16px;
+      background: #FFFFFF;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 2px 12px rgba(14,165,233,0.08);
+      box-shadow: 0 2px 8px rgba(26,43,74,0.06);
       transition: box-shadow 0.2s;
     }
-    .room-card:hover { box-shadow: 0 6px 24px rgba(14,165,233,0.18); }
+    .room-card:hover { box-shadow: 0 6px 20px rgba(26,43,74,0.12); }
     .room-bar { height: 6px; }
     .room-body { padding: 1.2rem; }
     .rooms-grid {
@@ -288,12 +327,12 @@
 
     /* ---- TENANT ROW ---- */
     .tenant-row {
-      background: var(--color-card);
-      border: 1px solid var(--color-border);
-      border-radius: 16px;
+      background: #FFFFFF;
+      border: 0.5px solid #B5D4F4;
+      border-radius: 12px;
       padding: 1.2rem;
       margin-bottom: 0.8rem;
-      box-shadow: 0 2px 12px rgba(14,165,233,0.07);
+      box-shadow: 0 2px 8px rgba(26,43,74,0.06);
     }
     .tenant-avatar {
       width: 42px; height: 42px;
@@ -334,7 +373,7 @@
     /* ---- LOADING ---- */
     #loading {
       position: fixed; inset: 0;
-      background: linear-gradient(135deg, #5C1A30, #7D2340);
+      background: #1A2B4A;
       display: flex; align-items: center; justify-content: center;
       flex-direction: column; gap: 1rem; z-index: 9999;
     }
@@ -355,7 +394,7 @@
 <!-- LOADING -->
 <div id="loading">
   <div class="spinner"></div>
-  <div style="color: #C9A96E; font-family: Georgia,serif; font-size: 1rem; letter-spacing:0.1em;">MAYNEST</div>
+  <div style="color: #C9A96E; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.3rem; font-style:italic; letter-spacing:0.1em;">MayNest</div>
   <div style="color: rgba(201,169,110,0.6); font-family: monospace; font-size: 0.75rem; letter-spacing:0.15em;">Chargement...</div>
 </div>
 
@@ -364,18 +403,18 @@
 
   <!-- HEADER -->
   <div class="header">
-    <div style="display:flex;align-items:center;gap:0.9rem">
+    <div class="header-logo-wrapper">
       <!-- Logo MayNest -->
-      <svg width="44" height="44" viewBox="0 0 44 44" style="flex-shrink:0">
+      <svg width="40" height="40" viewBox="0 0 44 44" style="flex-shrink:0">
         <rect width="44" height="44" fill="rgba(255,255,255,0.1)" rx="10"/>
         <rect x="11" y="22" width="22" height="16" fill="#FAF6F1" rx="1"/>
         <polygon points="9,22 22,10 35,22" fill="#C9A96E"/>
-        <rect x="15" y="26" width="5" height="5" fill="#7D2340" rx="1" opacity="0.7"/>
-        <rect x="24" y="26" width="5" height="5" fill="#7D2340" rx="1" opacity="0.7"/>
+        <rect x="15" y="26" width="5" height="5" fill="#1A2B4A" rx="1" opacity="0.7"/>
+        <rect x="24" y="26" width="5" height="5" fill="#1A2B4A" rx="1" opacity="0.7"/>
         <rect x="19" y="30" width="6" height="8" fill="#C9A96E" rx="1"/>
       </svg>
-      <div>
-        <div class="header-title">MAYNEST</div>
+      <div class="header-text-wrapper">
+        <div class="header-title">MayNest</div>
         <div class="header-sub">GESTION LOCATIVE · 5 CHAMBRES</div>
       </div>
     </div>
@@ -449,11 +488,11 @@
 // Modifie les noms et couleurs ici
 // ============================================
 const ROOMS = [
-  { id: 'r1', name: 'Chambre 1', color: 'var(--room1)' },
-  { id: 'r2', name: 'Chambre 2', color: 'var(--room2)' },
-  { id: 'r3', name: 'Chambre 3', color: 'var(--room3)' },
-  { id: 'r4', name: 'Chambre 4', color: 'var(--room4)' },
-  { id: 'r5', name: 'Chambre 5', color: 'var(--room5)' },
+  { id: 'r1', name: 'Chambre 1', color: '#7D2340' },
+  { id: 'r2', name: 'Chambre 2', color: '#1A2B4A' },
+  { id: 'r3', name: 'Chambre 3', color: '#2E508C' },
+  { id: 'r4', name: 'Chambre 4', color: '#D4A843' },
+  { id: 'r5', name: 'Chambre 5', color: '#2E7D8C' },
 ];
 
 const CLEAN_TASKS = {
@@ -509,17 +548,29 @@ function badge(label, color) {
 }
 
 function statusBadge(s) {
-  const map = { active: ['Actif','var(--color-green)'], leaving: ['En départ','var(--color-primary)'], ended: ['Terminé','#888'] };
+  const map = {
+    active:  ['Actif',      '#2E7D8C'],
+    leaving: ['En départ',  '#D4A843'],
+    ended:   ['Terminé',    '#5B7FA6']
+  };
   return badge(map[s][0], map[s][1]);
 }
 
 function payBadge(s) {
-  const map = { paid: ['Payé','var(--color-green)'], late: ['En retard','var(--color-red)'], pending: ['En attente','var(--color-primary)'] };
+  const map = {
+    paid:    ['Payé',        '#2E7D8C'],
+    late:    ['En retard',   '#7D2340'],
+    pending: ['En attente',  '#D4A843']
+  };
   return badge(map[s][0], map[s][1]);
 }
 
 function depBadge(s) {
-  const map = { held: ['Détenu','var(--color-purple)'], returned: ['Rendu','var(--color-green)'], partial: ['Partiel','var(--color-primary)'] };
+  const map = {
+    held:     ['Détenu',  '#1A2B4A'],
+    returned: ['Rendu',   '#2E7D8C'],
+    partial:  ['Partiel', '#D4A843']
+  };
   return badge(map[s][0], map[s][1]);
 }
 
@@ -604,7 +655,7 @@ function updateFreeBadges() {
   const occupied = activeTenants().map(t => t.room);
   const free = ROOMS.filter(r => !occupied.includes(r.id));
   document.getElementById('free-badges').innerHTML = free.map(r =>
-    `<span class="free-badge" style="background:${r.color}22;border:1px solid ${r.color}44;color:${r.color}">${r.name} libre</span>`
+    `<span class="free-badge">${r.name} libre</span>`
   ).join('');
 }
 
@@ -621,24 +672,24 @@ function renderDashboard() {
 
   let html = `<h1 class="page-title">Tableau de bord</h1>
   <div class="card-grid">
-    <div class="kpi-card" style="border-color:var(--color-primary)33">
+    <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #1A2B4A">
       <div style="font-size:1.3rem">◈</div>
-      <div class="kpi-value" style="color:var(--color-primary)">${totalRev} €/mois</div>
+      <div class="kpi-value" style="color:#1A2B4A">${totalRev} €/mois</div>
       <div class="kpi-label">Revenus mensuels</div>
     </div>
-    <div class="kpi-card" style="border-color:var(--color-green)33">
+    <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #2E7D8C">
       <div style="font-size:1.3rem">✓</div>
-      <div class="kpi-value" style="color:var(--color-green)">${paidAmt} €</div>
+      <div class="kpi-value" style="color:#2E7D8C">${paidAmt} €</div>
       <div class="kpi-label">Encaissé ce mois</div>
     </div>
-    <div class="kpi-card" style="border-color:var(--color-purple)33">
+    <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #D4A843">
       <div style="font-size:1.3rem">⊞</div>
-      <div class="kpi-value" style="color:var(--color-purple)">${active.length} / 5</div>
+      <div class="kpi-value" style="color:#9A7520">${active.length} / 5</div>
       <div class="kpi-label">Chambres occupées</div>
     </div>
-    <div class="kpi-card" style="border-color:var(--color-red)33">
+    <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #7D2340">
       <div style="font-size:1.3rem">⚠</div>
-      <div class="kpi-value" style="color:var(--color-red)">${late.length}</div>
+      <div class="kpi-value" style="color:#7D2340">${late.length}</div>
       <div class="kpi-label">Retards de paiement</div>
     </div>
   </div>`;
@@ -687,30 +738,42 @@ function renderDashboard() {
 // ROOMS
 // ============================================
 function renderRooms() {
-  let html = `<h1 class="page-title">Chambres</h1><div class="rooms-grid">`;
-  ROOMS.forEach(room => {
+  let html = `<h1 class="page-title">Chambres</h1>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">`;
+
+  ROOMS.forEach((room, index) => {
     const tenant = tenants.find(t => t.room===room.id && t.status!=='ended');
-    const dep = deposits.find(d => d.tenantId===tenant?.id);
-    html += `<div class="room-card" style="border:1px solid ${room.color}44">
-      <div class="room-bar" style="background:${room.color}"></div>
-      <div class="room-body">
-        <div style="font-size:1.1rem;font-weight:700;color:${room.color};margin-bottom:0.8rem">${room.name}</div>`;
+    const isLast = index === ROOMS.length - 1;
+    const gridStyle = isLast && ROOMS.length % 2 !== 0 ? 'grid-column:1/3' : '';
+
+    html += `<div style="${gridStyle};background:#fff;border-radius:12px;overflow:hidden;border:0.5px solid ${room.color}44;box-shadow:0 2px 8px rgba(26,43,74,0.06)">
+      <div style="height:5px;background:${room.color}"></div>
+      <div style="padding:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${room.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7v11m0-5h18m0-6v11M6 7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5H6V7z"/>
+          </svg>
+          <div style="font-weight:700;color:${room.color};font-size:13px">${room.name}</div>
+        </div>`;
+
     if (tenant) {
-      html += `<div style="font-weight:600;margin-bottom:0.3rem">${tenant.name}</div>
-        <div style="font-size:0.78rem;color:var(--color-text-muted);font-family:monospace;margin-bottom:0.5rem">
-          Entrée: ${fmtDate(tenant.entryDate)}<br>Sortie: ${fmtDate(tenant.exitDate)}
-        </div>
-        <div style="font-size:0.85rem;font-weight:700;font-family:monospace;color:var(--color-primary);margin-bottom:0.8rem">${tenant.rent} €/mois</div>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-          <button class="btn-sm btn-outline-y" style="border-color:${room.color};color:${room.color}" onclick="openEditTenant('${tenant.id}')">Modifier</button>
-          <button class="btn-sm btn-outline-y" style="border-color:${room.color};color:${room.color}" onclick="openWhatsApp('${tenant.id}')">📱 WhatsApp</button>
+      html += `<div style="font-size:12px;font-weight:600;color:#042C53;margin-bottom:2px">${tenant.name.split(' ')[0]} ${tenant.name.split(' ')[1]?.[0]||''}.</div>
+        <div style="font-size:11px;color:#5B7FA6;font-family:monospace;margin-bottom:4px">${tenant.rent} €/mois</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
+          <span style="font-size:10px;background:#2E7D8C18;color:#2E7D8C;padding:2px 7px;border-radius:10px">Actif</span>
+          <div style="display:flex;gap:4px">
+            <button style="font-size:10px;background:transparent;color:${room.color};border:1px solid ${room.color}55;border-radius:8px;padding:2px 7px;cursor:pointer;font-family:monospace" onclick="openEditTenant('${tenant.id}')">Modifier</button>
+            <button style="font-size:10px;background:transparent;color:#25D366;border:1px solid #25D36655;border-radius:8px;padding:2px 7px;cursor:pointer;font-family:monospace" onclick="openWhatsApp('${tenant.id}')">WA</button>
+          </div>
         </div>`;
     } else {
-      html += `<div style="font-size:0.85rem;color:var(--color-green);font-family:monospace;margin-bottom:0.8rem">● Libre</div>
-        <button class="btn-sm btn-outline-y" style="border-color:${room.color};color:${room.color}" onclick="openAddTenant('${room.id}')">+ Ajouter locataire</button>`;
+      html += `<div style="font-size:11px;color:#2E7D8C;font-family:monospace;margin-bottom:8px">● Libre</div>
+        <button style="font-size:11px;background:${room.color};color:#fff;border:none;border-radius:10px;padding:4px 10px;cursor:pointer;font-family:monospace;font-weight:600" onclick="openAddTenant('${room.id}')">+ Ajouter</button>`;
     }
+
     html += `</div></div>`;
   });
+
   html += `</div>`;
   document.getElementById('tab-rooms').innerHTML = html;
 }
@@ -732,7 +795,7 @@ function renderTenants() {
         <div style="flex:1;min-width:0">
           <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.5rem">
             <div>
-              <div style="font-weight:600;font-size:1rem">${t.name}</div>
+              <div style="font-weight:700;font-size:1rem">${t.name}</div>
               <div style="font-size:0.8rem;color:var(--color-text-muted);font-family:monospace">${r?.name} · ${t.email||''}</div>
             </div>
             ${statusBadge(t.status)}

@@ -468,6 +468,7 @@ let tenants  = [];
 let payments = [];
 let deposits = [];
 let cleaning = {};
+let documents = {}; // { tenantId: [{id, name, type, size, date, data}] }
 let currentTab = 'dashboard';
 
 // ============================================
@@ -559,6 +560,10 @@ async function saveCleaning(c) {
   const db = getDb(); const docFn = getDoc(); const setFn = getSet();
   await setFn(docFn(db, 'cleaning', 'data'), c);
 }
+async function saveDocuments(tenantId, files) {
+  const db = getDb(); const docFn = getDoc(); const setFn = getSet();
+  await setFn(docFn(db, 'documents', tenantId), { files });
+}
 
 // ============================================
 // LOAD DATA
@@ -584,6 +589,11 @@ function loadData() {
   onSnapshot(collection(db,'cleaning'), snap => {
     snap.docs.forEach(d => { if(d.id==='data') cleaning = d.data(); });
     if(currentTab==='cleaning') renderCleaning();
+  });
+  onSnapshot(collection(db,'documents'), snap => {
+    documents = {};
+    snap.docs.forEach(d => { documents[d.id] = d.data().files || []; });
+    if(currentTab==='tenants') renderTenants();
   });
 }
 
@@ -737,10 +747,44 @@ function renderTenants() {
           <div style="display:flex;gap:0.5rem;margin-top:0.8rem;flex-wrap:wrap">
             <button class="btn-sm btn-outline-y" onclick="openEditTenant('${t.id}')">Modifier</button>
             <button class="btn-sm btn-outline-g" onclick="openPayment('${t.id}')">Paiement</button>
-            <button class="btn-sm btn-outline-o" onclick="openDeposit('${t.id}')">Dépôt/Fianza</button>
+            <button class="btn-sm btn-outline-o" onclick="openDeposit('${t.id}')">Dépôt/Caution</button>
             <button class="btn-sm btn-outline-p" onclick="openEtatLieux('${t.id}')">État des lieux</button>
             <button class="btn-sm" style="background:transparent;color:#25D366;border:1.5px solid #25D366;border-radius:8px;font-family:monospace;font-size:0.8rem;cursor:pointer" onclick="openWhatsApp('${t.id}')">📱 Rappel loyer</button>
             <button class="btn-sm btn-outline-r" onclick="confirmDelete('${t.id}')">Supprimer</button>
+          </div>
+
+          <!-- DOCUMENTS SECTION -->
+          <div style="margin-top:1rem;border-top:1px solid var(--color-border);padding-top:1rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.7rem">
+              <div style="font-size:0.72rem;color:var(--color-text-muted);letter-spacing:0.1em;text-transform:uppercase;font-family:monospace">📁 Documents (${(documents[t.id]||[]).length})</div>
+              <label style="cursor:pointer;background:#7D2340;color:#FAF6F1;border:none;border-radius:8px;padding:0.3rem 0.7rem;font-size:0.78rem;font-family:monospace;font-weight:700">
+                + Ajouter
+                <input type="file" style="display:none" accept="*/*" onchange="uploadDoc('${t.id}', this)">
+              </label>
+            </div>
+            ${(documents[t.id]||[]).length === 0 ?
+              `<div style="text-align:center;padding:1rem;background:#FAF6F1;border-radius:8px;border:1.5px dashed #E8DDD4;color:var(--color-text-muted);font-size:0.82rem">
+                Aucun document. Clique "+ Ajouter" pour uploader.
+              </div>` :
+              (documents[t.id]||[]).map(doc => {
+                const isImg = doc.type && doc.type.startsWith('image/');
+                const isPdf = doc.type === 'application/pdf';
+                const icon = isPdf ? '📄' : isImg ? '🖼️' : '📎';
+                const sizeMB = (doc.size / (1024*1024)).toFixed(1);
+                return `<div style="display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.8rem;background:#FAF6F1;border-radius:8px;border:0.5px solid #E8DDD4;margin-bottom:0.4rem">
+                  <span style="font-size:1.2rem">${icon}</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:0.82rem;font-weight:600;color:var(--color-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${doc.name}</div>
+                    <div style="font-size:0.72rem;color:var(--color-text-muted);font-family:monospace">${doc.date} · ${sizeMB} MB</div>
+                  </div>
+                  <div style="display:flex;gap:0.3rem;flex-shrink:0">
+                    <button class="btn-sm" style="background:transparent;color:#7D2340;border:1px solid #7D234044;border-radius:6px;padding:0.25rem 0.5rem;font-size:0.75rem;cursor:pointer" onclick="viewDoc('${t.id}','${doc.id}')">👁 Voir</button>
+                    <button class="btn-sm" style="background:transparent;color:#2D7A4F;border:1px solid #2D7A4F44;border-radius:6px;padding:0.25rem 0.5rem;font-size:0.75rem;cursor:pointer" onclick="downloadDoc('${t.id}','${doc.id}')">⬇ Télécharger</button>
+                    <button class="btn-sm" style="background:transparent;color:#C0392B;border:1px solid #C0392B44;border-radius:6px;padding:0.25rem 0.5rem;font-size:0.75rem;cursor:pointer" onclick="deleteDoc('${t.id}','${doc.id}')">🗑</button>
+                  </div>
+                </div>`;
+              }).join('')
+            }
           </div>
         </div>
       </div>
@@ -1307,6 +1351,110 @@ function openWhatsApp(tenantId) {
         <button class="whatsapp-btn">📱 Envoyer WhatsApp</button>
       </a>
     </div>`);
+}
+
+// ============================================
+// DOCUMENTS
+// ============================================
+async function uploadDoc(tenantId, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  if (file.size > 1.5 * 1024 * 1024) {
+    alert('Fichier trop grand ! Maximum 1.5 MB par document.');
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const existing = documents[tenantId] || [];
+    const newDoc = {
+      id: 'd_' + Date.now(),
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      date: new Date().toLocaleDateString('fr-FR'),
+      data: e.target.result
+    };
+    const updated = [...existing, newDoc];
+    documents[tenantId] = updated;
+    await saveDocuments(tenantId, updated);
+    renderTenants();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function viewDoc(tenantId, docId) {
+  const docs = documents[tenantId] || [];
+  const doc = docs.find(d => d.id === docId);
+  if (!doc) return;
+  const win = window.open('');
+  if (doc.type && doc.type.startsWith('image/')) {
+    win.document.write(`<html><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="${doc.data}" style="max-width:100%;max-height:100vh"></body></html>`);
+  } else {
+    win.document.write(`<html><body style="margin:0"><embed src="${doc.data}" width="100%" height="100%" style="position:fixed;inset:0"></body></html>`);
+  }
+}
+
+function downloadDoc(tenantId, docId) {
+  const docs = documents[tenantId] || [];
+  const doc = docs.find(d => d.id === docId);
+  if (!doc) return;
+  const a = document.createElement('a');
+  a.href = doc.data;
+  a.download = doc.name;
+  a.click();
+}
+
+// ============================================
+// DOCUMENTS
+// ============================================
+async function uploadDoc(tenantId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 1.5 * 1024 * 1024) {
+    alert('Fichier trop grand ! Maximum 1.5 MB.');
+    input.value = ''; return;
+  }
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const existing = documents[tenantId] || [];
+    const newDoc = { id: 'd_' + Date.now(), name: file.name, type: file.type, size: file.size, date: new Date().toLocaleDateString('fr-FR'), data: e.target.result };
+    const updated = [...existing, newDoc];
+    documents[tenantId] = updated;
+    await saveDocuments(tenantId, updated);
+    renderTenants();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function viewDoc(tenantId, docId) {
+  const doc = (documents[tenantId]||[]).find(d => d.id===docId);
+  if (!doc) return;
+  const win = window.open('');
+  if (doc.type && doc.type.startsWith('image/')) {
+    win.document.write(`<html><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="${doc.data}" style="max-width:100%;max-height:100vh"></body></html>`);
+  } else {
+    win.document.write(`<html><body style="margin:0"><embed src="${doc.data}" width="100%" height="100%" style="position:fixed;inset:0"></body></html>`);
+  }
+}
+
+function downloadDoc(tenantId, docId) {
+  const doc = (documents[tenantId]||[]).find(d => d.id===docId);
+  if (!doc) return;
+  const a = document.createElement('a');
+  a.href = doc.data; a.download = doc.name; a.click();
+}
+
+async function deleteDoc(tenantId, docId) {
+  if (!confirm('Supprimer ce document ?')) return;
+  const docs = (documents[tenantId]||[]).filter(d => d.id!==docId);
+  documents[tenantId] = docs;
+  await saveDocuments(tenantId, docs);
+  renderTenants();
 }
 
 // DELETE CONFIRM

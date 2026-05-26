@@ -696,7 +696,16 @@ function renderDashboard() {
   </div>`;
 
   // Alertes
-
+  if (late.length > 0 || exits.length > 0) {
+    html += `<div class="section-title">ALERTES</div>`;
+    late.forEach(p => {
+      const t = tenants.find(x => x.id===p.tenantId);
+      const r = roomById(t?.room);
+      html += `<div class="alert" style="background:var(--color-red)11;border:1px solid var(--color-red)44">
+        <span style="color:var(--color-red);font-size:0.88rem">⚠ Paiement en retard — <strong>${t?.name}</strong> · ${r?.name}</span>
+        <span style="color:var(--color-red);font-family:monospace;font-size:0.82rem">${p.amount} €</span>
+      </div>`;
+    });
     exits.forEach(t => {
       const d = daysUntil(t.exitDate);
       html += `<div class="alert" style="background:var(--color-primary)11;border:1px solid var(--color-primary)44">
@@ -706,22 +715,7 @@ function renderDashboard() {
     });
   }
 
-  // Locataires actifs
-  html += `<div class="section-title" style="margin-top:1.5rem">LOCATAIRES ACTIFS</div>`;
-  active.forEach(t => {
-    const r = roomById(t.room);
-    html += `<div class="card" style="display:flex;align-items:center;gap:1rem;cursor:pointer" onclick="openEditTenant('${t.id}')">
-      <div style="width:10px;height:40px;border-radius:4px;background:${r?.color};flex-shrink:0"></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:0.95rem">${t.name}</div>
-        <div style="font-size:0.78rem;color:var(--color-text-muted);font-family:monospace">${r?.name} · ${t.phone||''}</div>
-      </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="color:var(--color-primary);font-weight:700;font-family:monospace">${t.rent} €/mois</div>
-        ${statusBadge(t.status)}
-      </div>
-    </div>`;
-  });
+
 
   // ============================================
   // CARTE - Change l'adresse ici !

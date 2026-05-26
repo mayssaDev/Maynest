@@ -103,11 +103,11 @@
       gap: 0.3rem;
       flex-wrap: wrap;
       justify-content: flex-end;
-      max-width: 50%;
+      max-width: 45%;
     }
     .free-badge {
-      font-size: 0.6rem;
-      padding: 0.15rem 0.4rem;
+      font-size: 0.58rem;
+      padding: 0.12rem 0.35rem;
       border-radius: 4px;
       font-family: monospace;
       background: transparent;
@@ -656,7 +656,7 @@ function updateFreeBadges() {
   const occupied = activeTenants().map(t => t.room);
   const free = ROOMS.filter(r => !occupied.includes(r.id));
   document.getElementById('free-badges').innerHTML = free.map(r =>
-    `<span class="free-badge">${r.name} libre</span>`
+    `<span class="free-badge">${r.name.replace("Habitación","H.")}</span>`
   ).join('');
 }
 
@@ -686,7 +686,7 @@ function renderDashboard() {
     <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #D4A843">
       <i class="ti ti-door" style="font-size:20px;color:#D4A843" aria-hidden="true"></i>
       <div class="kpi-value" style="color:#9A7520">${active.length} / 5</div>
-      <div class="kpi-label">Habitaciones occupées</div>
+      <div class="kpi-label">Habitaciones ocupadas</div>
     </div>
     <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #7D2340">
       <i class="ti ti-clock-exclamation" style="font-size:20px;color:#7D2340" aria-hidden="true"></i>

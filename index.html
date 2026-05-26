@@ -1553,11 +1553,11 @@ function confirmDelete(id) {
 // INIT
 // ============================================
 window.addEventListener('firebase-ready', () => {
-  loadData();
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   renderDashboard();
   updateFreeBadges();
+  loadData();
 });
 </script>
 </body>

@@ -276,7 +276,7 @@
       display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 1.5rem;
     }
-    .modal-title { font-size: 1.3rem; font-weight: 600; font-style:italic; color: #0C447C; font-family:'Cormorant Garamond',serif; }
+    .modal-title { font-size: 0.78rem; font-weight: 700; font-style: normal; color: #1A2B4A; font-family: monospace; letter-spacing: 0.1em; text-transform: uppercase; }
     .modal-close {
       background: none; border: none;
       color: #8a9ab5; font-size: 1.5rem; cursor: pointer;
@@ -910,7 +910,7 @@ function renderPayments() {
         ${p ? payBadge(p.status) : `<span style="font-size:0.75rem;color:#444;font-family:monospace">Aucun</span>`}
       </div>`;
     });
-    html += `<div style="padding:0.7rem 1rem;background:#0d0d14;border-radius:8px;display:flex;justify-content:space-between">
+    html += `<div style="padding:0.7rem 1rem;background:#EEF2F8;border-radius:8px;border:0.5px solid #B5D4F4;display:flex;justify-content:space-between">
       <span style="font-size:0.8rem;color:var(--color-text-muted);font-family:monospace">Total encaissé</span>
       <span style="font-family:monospace;color:var(--color-green);font-weight:700">${total} €</span>
     </div></div>`;
@@ -1334,7 +1334,7 @@ async function saveTenantForm(oldId, isEdit) {
 function openPayment(tenantId) {
   const t = tenants.find(x => x.id===tenantId);
   const statusOpts = [['paid','Payé'],['late','En retard'],['pending','En attente']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
-  openModal(`Paiement — ${t.name}`, `
+  openModal('Paiement', `
     <div class="form-group"><label class="form-label">Mois (AAAA-MM)</label><input class="form-input" id="p-month" value="${currentMonth()}"></div>
     <div class="form-group"><label class="form-label">Montant (€)</label><input class="form-input" type="number" id="p-amount" value="${t.rent}"></div>
     <div class="form-group"><label class="form-label">Statut</label><select class="form-select" id="p-status">${statusOpts}</select></div>
@@ -1358,27 +1358,27 @@ function openDeposit(tenantId) {
   const t = tenants.find(x => x.id===tenantId);
   const d = deposits.find(x => x.tenantId===tenantId) || { tenantId, advance:t.rent, advanceStatus:'held', advancePaidDate:'', fianza:t.rent, fianzaStatus:'held', fianzaPaidDate:'', notes:'' };
   const depOpts = s => [['held','Détenu'],['returned','Rendu'],['partial','Partiel']].map(([v,l])=>`<option value="${v}" ${s===v?'selected':''}>${l}</option>`).join('');
-  openModal(`Dépôt & Garantie — ${t.name}`, `
-    <div style="background:#0d0d14;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.8rem;color:#555;font-family:monospace">
-      Loyer de référence : <span style="color:var(--color-primary)">${t.rent} €</span>
+  openModal('Caution & Garantie', `
+    <div style="background:#EEF2F8;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.85rem;color:#1A2B4A;font-family:monospace;border:0.5px solid #B5D4F4">
+      Loyer de référence : <span style="color:#1A2B4A;font-weight:700">${t.rent} €</span>
     </div>
-    <div style="color:var(--color-orange);font-size:0.85rem;font-weight:700;margin-bottom:0.8rem">Mois d'avance</div>
+    <div style="color:#1A2B4A;font-size:0.85rem;font-weight:700;margin-bottom:0.8rem">Mois d'avance</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Montant (€)</label><input class="form-input" type="number" id="d-adv" value="${d.advance}"></div>
       <div class="form-group"><label class="form-label">Date reçu</label><input class="form-input" type="date" id="d-advdate" value="${d.advancePaidDate||''}"></div>
     </div>
     <div class="form-group"><label class="form-label">Statut avance</label><select class="form-select" id="d-advstatus">${depOpts(d.advanceStatus)}</select></div>
-    <div style="border-top:1px solid var(--color-border);margin:1rem 0"></div>
-    <div style="color:var(--color-primary);font-size:0.85rem;font-weight:700;margin-bottom:0.8rem">Caution</div>
+    <div style="border-top:1px solid #B5D4F4;margin:1rem 0"></div>
+    <div style="color:#1A2B4A;font-size:0.85rem;font-weight:700;margin-bottom:0.8rem">Caution</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Montant (€)</label><input class="form-input" type="number" id="d-fia" value="${d.fianza}"></div>
       <div class="form-group"><label class="form-label">Date reçu</label><input class="form-input" type="date" id="d-fiadate" value="${d.fianzaPaidDate||''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Statut fianza</label><select class="form-select" id="d-fiastatus">${depOpts(d.fianzaStatus)}</select></div>
+    <div class="form-group"><label class="form-label">Statut caution</label><select class="form-select" id="d-fiastatus">${depOpts(d.fianzaStatus)}</select></div>
     <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input form-textarea" id="d-notes">${d.notes||''}</textarea></div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">
       <button class="btn btn-outline-y" onclick="closeModal()">Annuler</button>
-      <button class="btn" style="background:var(--color-orange);color:#111;border-color:var(--color-orange)" onclick="saveDepositForm('${tenantId}')">Enregistrer</button>
+      <button class="btn" style="background:#1A2B4A;color:#fff;border-color:#1A2B4A;border-radius:20px" onclick="saveDepositForm('${tenantId}')">Enregistrer</button>
     </div>`);
 }
 
@@ -1400,12 +1400,12 @@ async function saveDepositForm(tenantId) {
 // ETAT DES LIEUX
 function openEtatLieux(tenantId) {
   const t = tenants.find(x => x.id===tenantId);
-  openModal(`État des lieux — ${t.name}`, `
-    <div style="background:#0d0d14;border-radius:10px;padding:1.2rem;margin-bottom:1rem">
-      <div style="font-size:0.75rem;font-family:monospace;color:#555;margin-bottom:0.5rem">NOTES D'ÉTAT</div>
-      <div style="color:#ccc;line-height:1.6;font-size:0.9rem">${t.etatLieux||'Aucune note enregistrée.'}</div>
+  openModal('État des lieux', `
+    <div style="background:#EEF2F8;border-radius:10px;padding:1.2rem;margin-bottom:1rem;border:0.5px solid #B5D4F4">
+      <div style="font-size:0.75rem;font-family:monospace;color:#5B7FA6;margin-bottom:0.5rem;letter-spacing:0.08em">NOTES D'ÉTAT</div>
+      <div style="color:#1A2B4A;line-height:1.6;font-size:0.9rem">${t.etatLieux||'Aucune note enregistrée.'}</div>
     </div>
-    <div style="font-size:0.78rem;color:#555;font-family:monospace">Entrée: ${fmtDate(t.entryDate)} · Sortie prévue: ${fmtDate(t.exitDate)}</div>
+    <div style="font-size:0.78rem;color:#5B7FA6;font-family:monospace">Entrée: ${fmtDate(t.entryDate)} · Sortie prévue: ${fmtDate(t.exitDate)}</div>
     <div style="display:flex;justify-content:flex-end;margin-top:1rem">
       <button class="btn btn-outline-y" onclick="closeModal()">Fermer</button>
     </div>`);
@@ -1430,8 +1430,8 @@ function openWhatsApp(tenantId) {
     `Bonjour ${t.name} 👋\n\nTon loyer de ${t.rent}€ est dû pour ${mon}.\n\nVirement bancaire :\nNom : ${bankInfo.nom}\nBanque : ${bankInfo.banque}\nIBAN : ${bankInfo.iban}\nMontant : ${t.rent} €\nRéférence : Loyer ${mon} - ${ROOMS.find(r=>r.id===t.room)?.name}\n\nMerci ! 🏠`
   );
 
-  openModal(`Rappel loyer — ${t.name}`, `
-    <div style="background:#0d0d14;border-radius:10px;padding:1.2rem;margin-bottom:1rem;font-size:0.85rem;color:#ccc;line-height:1.8;white-space:pre-wrap">Bonjour ${t.name} 👋\n\nTon loyer de ${t.rent}€ est dû pour ${mon}.\n\nVirement bancaire :\nNom : ${bankInfo.nom}\nBanque : ${bankInfo.banque}\nIBAN : ${bankInfo.iban}\nMontant : ${t.rent} €\nRéférence : Loyer ${mon} - ${ROOMS.find(r=>r.id===t.room)?.name}</div>
+  openModal('Rappel loyer', `
+    <div style="background:#EEF2F8;border-radius:10px;padding:1.2rem;margin-bottom:1rem;font-size:0.85rem;color:#1A2B4A;line-height:1.8;white-space:pre-wrap;border:0.5px solid #B5D4F4">Bonjour ${t.name} 👋\n\nTon loyer de ${t.rent}€ est dû pour ${mon}.\n\nVirement bancaire :\nNom : ${bankInfo.nom}\nBanque : ${bankInfo.banque}\nIBAN : ${bankInfo.iban}\nMontant : ${t.rent} €\nRéférence : Loyer ${mon} - ${ROOMS.find(r=>r.id===t.room)?.name}</div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end">
       <button class="btn btn-outline-y" onclick="closeModal()">Fermer</button>
       <a href="https://wa.me/${t.phone?.replace(/\D/g,'')}?text=${msg}" target="_blank">
@@ -1547,8 +1547,8 @@ async function deleteDoc(tenantId, docId) {
 // DELETE CONFIRM
 function confirmDelete(id) {
   const t = tenants.find(x => x.id===id);
-  openModal('Supprimer locataire', `
-    <p style="color:#ccc;margin-bottom:1.5rem">Supprimer <strong>${t?.name}</strong> ? Cette action est irréversible.</p>
+  openModal('Supprimer', `
+    <p style="color:#1A2B4A;margin-bottom:1.5rem;font-family:'Segoe UI',system-ui,sans-serif;font-size:0.9rem;line-height:1.6">Supprimer <strong>${t?.name}</strong> ? Cette action est irréversible.</p>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end">
       <button class="btn btn-outline-y" onclick="closeModal()">Annuler</button>
       <button class="btn" style="background:var(--color-red);color:#fff;border-color:var(--color-red)" onclick="deleteTenant('${id}');closeModal()">Supprimer</button>

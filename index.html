@@ -969,17 +969,16 @@ function renderDeposits() {
 
   let html = `<h1 class="page-title">Garantías</h1>
 
-  <!-- KPI Cards bleu nuit -->
-  <div style="display:flex;gap:10px;margin-bottom:16px">
-    <div style="flex:1;background:#1A2B4A;border-radius:10px;padding:12px;text-align:center">
+  <div class="card-grid" style="margin-bottom:16px">
+    <div class="kpi-card" style="background:#1A2B4A;border:none;text-align:center">
       <div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">ANTICIPOS</div>
       <div style="font-size:20px;font-weight:700;color:#ffffff">${totalAdv} €</div>
     </div>
-    <div style="flex:1;background:#1A2B4A;border-radius:10px;padding:12px;text-align:center">
+    <div class="kpi-card" style="background:#1A2B4A;border:none;text-align:center">
       <div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">FIANZAS</div>
       <div style="font-size:20px;font-weight:700;color:#ffffff">${totalFia} €</div>
     </div>
-    <div style="flex:1;background:#1A2B4A;border-radius:10px;padding:12px;text-align:center;border:1.5px solid #D4A843">
+    <div class="kpi-card" style="background:#1A2B4A;border:1.5px solid #D4A843;text-align:center">
       <div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">TOTAL</div>
       <div style="font-size:20px;font-weight:700;color:#ffffff">${totalAdv + totalFia} €</div>
     </div>
@@ -995,41 +994,42 @@ function renderDeposits() {
 
     html += `<div style="background:#fff;border-radius:12px;overflow:hidden;margin-bottom:8px;border:0.5px solid #B5D4F4">
       <!-- Header -->
-      <div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #B5D4F4">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:34px;height:34px;border-radius:50%;background:${r?.color}18;border:1.5px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-weight:700;color:${r?.color};font-size:14px">${t.name[0]}</div>
+      <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #B5D4F4">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:50%;background:${r?.color}18;border:1.5px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-weight:700;color:${r?.color};font-size:13px">${t.name[0]}</div>
           <div>
             <div style="font-weight:600;font-size:13px;color:#1A2B4A">${t.name}</div>
-            <div style="font-size:11px;color:#8a9ab5">${r?.name} · ${t.rent} €/mes</div>
+            <div style="font-size:10px;color:#8a9ab5">${r?.name} · ${t.rent} €/mes</div>
           </div>
         </div>
-        <div style="display:flex;gap:6px">
-          <button style="font-size:11px;background:transparent;border:0.5px solid #B5D4F4;color:#1A2B4A;border-radius:20px;padding:3px 10px;cursor:pointer" onclick="openDeposit('${t.id}')">Modificar</button>
-          <button style="font-size:11px;background:#7D2340;border:none;color:#fff;border-radius:20px;padding:3px 10px;cursor:pointer" onclick="exportDepositPDF('${t.id}')">PDF</button>
+        <div style="display:flex;gap:5px">
+          <button style="font-size:10px;background:transparent;border:0.5px solid #B5D4F4;color:#1A2B4A;border-radius:20px;padding:2px 8px;cursor:pointer" onclick="openDeposit('${t.id}')">Modificar</button>
+          <button style="font-size:10px;background:#7D2340;border:none;color:#fff;border-radius:20px;padding:2px 8px;cursor:pointer" onclick="exportDepositPDF('${t.id}')">PDF</button>
         </div>
       </div>
 
-      <!-- 3 colonnes: ANTICIPO | FIANZA | TOTAL -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr">
-        <div style="padding:12px 14px;border-right:0.5px solid #EEF2F8">
-          <div style="font-size:10px;color:#8a9ab5;font-family:monospace;margin-bottom:4px">MES ANTICIPO</div>
-          <div style="font-size:16px;font-weight:700;color:#1A2B4A;margin-bottom:4px">${d.advance} €</div>
+      <!-- ANTICIPO + FIANZA 2 colonnes -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:0.5px solid #EEF2F8">
+        <div style="padding:10px 12px;border-right:0.5px solid #EEF2F8">
+          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">MES ANTICIPO</div>
+          <div style="font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:3px">${d.advance} €</div>
           ${depBadge(d.advanceStatus)}
-          ${d.advancePaidDate ? `<div style="font-size:10px;color:#8a9ab5;font-family:monospace;margin-top:4px">${fmtDate(d.advancePaidDate)}</div>` : ''}
+          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-top:3px">${d.advancePaidDate ? fmtDate(d.advancePaidDate) : '—'}</div>
         </div>
-        <div style="padding:12px 14px;border-right:0.5px solid #EEF2F8">
-          <div style="font-size:10px;color:#8a9ab5;font-family:monospace;margin-bottom:4px">FIANZA</div>
-          <div style="font-size:16px;font-weight:700;color:#1A2B4A;margin-bottom:4px">${d.fianza} €</div>
+        <div style="padding:10px 12px">
+          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">FIANZA</div>
+          <div style="font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:3px">${d.fianza} €</div>
           ${depBadge(d.fianzaStatus)}
-          ${d.fianzaPaidDate ? `<div style="font-size:10px;color:#8a9ab5;font-family:monospace;margin-top:4px">${fmtDate(d.fianzaPaidDate)}</div>` : ''}
-        </div>
-        <div style="padding:12px 14px;background:#7D234011">
-          <div style="font-size:10px;color:#9B6070;font-family:monospace;margin-bottom:4px">TOTAL</div>
-          <div style="font-size:16px;font-weight:700;color:#7D2340;margin-bottom:4px">${total} €</div>
-          <span style="font-size:10px;background:#7D234022;color:#7D2340;padding:2px 6px;border-radius:10px">Garantías</span>
+          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-top:3px">${d.fianzaPaidDate ? fmtDate(d.fianzaPaidDate) : '—'}</div>
         </div>
       </div>
-      ${d.notes ? `<div style="padding:8px 14px;font-size:11px;color:#8a9ab5;font-style:italic;border-top:0.5px solid #EEF2F8">${d.notes}</div>` : ''}
+
+      <!-- TOTAL en bas full width -->
+      <div style="padding:8px 14px;background:#7D234011;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:10px;color:#9B6070;font-family:monospace">TOTAL GARANTÍAS</span>
+        <span style="font-size:16px;font-weight:700;color:#7D2340">${total} €</span>
+      </div>
+      ${d.notes ? `<div style="padding:6px 14px;font-size:11px;color:#8a9ab5;font-style:italic;border-top:0.5px solid #EEF2F8">${d.notes}</div>` : ''}
     </div>`;
   });
 

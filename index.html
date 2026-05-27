@@ -1418,7 +1418,7 @@ async function checkLatePayments() {
   const day = today.getDate();
   const mon = currentMonth();
 
-  if (day <= 5) return;
+  if (day <= 27) return;
 
   const validTenantIds = activeTenants().map(t => t.id);
 

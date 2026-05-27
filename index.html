@@ -542,6 +542,45 @@ function fmtDate(d)     { if (!d) return '—'; const [y,m,day] = d.split('-'); 
 function daysUntil(d)   { if (!d) return null; return Math.ceil((new Date(d) - new Date()) / 86400000); }
 function getWeek()      { const d = new Date(); return Math.ceil(((d - new Date(d.getFullYear(),0,1))/86400000 + new Date(d.getFullYear(),0,1).getDay()+1)/7); }
 function currentMonth() { return new Date().toISOString().slice(0,7); }
+
+// ============================================
+// PAGO AUTOMATICO - Día límite de pago
+// ============================================
+const PAYMENT_DEADLINE_DAY = 5; // Día límite de pago (entre 1 y 5)
+
+function isLate() {
+  return new Date().getDate() > PAYMENT_DEADLINE_DAY;
+}
+
+async function generateMonthlyPayments() {
+  const mon = currentMonth();
+  const active = activeTenants();
+  for (const t of active) {
+    const exists = payments.find(p => p.tenantId === t.id && p.month === mon);
+    if (!exists) {
+      const status = 'pending';
+      const p = {
+        id: `p_${t.id}_${mon}`,
+        tenantId: t.id,
+        month: mon,
+        amount: t.rent,
+        status,
+        date: null
+      };
+      await savePayment(p);
+    }
+  }
+}
+
+async function checkLatePayments() {
+  if (!isLate()) return;
+  const mon = currentMonth();
+  for (const p of payments) {
+    if (p.month === mon && p.status === 'pending') {
+      await savePayment({ ...p, status: 'late' });
+    }
+  }
+}
 function activeTenants(){ return tenants.filter(t => t.status !== 'ended'); }
 
 function badge(label, color) {
@@ -907,7 +946,10 @@ function renderPayments() {
           <div style="font-size:0.75rem;color:var(--color-text-muted);font-family:monospace">${r?.name}</div>
         </div>
         <div style="font-family:monospace;color:var(--color-primary);font-weight:700">${t.rent} €</div>
-        ${p ? payBadge(p.status) : `<span style="font-size:0.75rem;color:#444;font-family:monospace">Aucun</span>`}
+        ${p ? `<div style="display:flex;align-items:center;gap:8px">
+          ${payBadge(p.status)}
+          ${p.status !== 'paid' ? `<button onclick="quickPay('${t.id}','${mon}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;cursor:pointer">✓ Pagado</button>` : ''}
+        </div>` : `<button onclick="quickPay('${t.id}','${mon}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;cursor:pointer">✓ Pagado</button>`}
       </div>`;
     });
     html += `<div style="padding:0.7rem 1rem;background:#EEF2F8;border-radius:8px;border:0.5px solid #B5D4F4;display:flex;justify-content:space-between">
@@ -925,30 +967,22 @@ function renderDeposits() {
   const totalAdv = deposits.filter(d=>d.advanceStatus==='held').reduce((s,d)=>s+d.advance,0);
   const totalFia = deposits.filter(d=>d.fianzaStatus==='held').reduce((s,d)=>s+d.fianza,0);
 
-  let html = `<h1 class="page-title">Garantías & Garanties</h1>
-  <p style="font-size:0.82rem;color:var(--color-text-muted);font-family:monospace;margin-bottom:1.5rem">Mes de anticipo y fianza por inquilino</p>
+  let html = `<h1 class="page-title">Garantías</h1>
 
-  <div class="card-grid" style="margin-bottom:1.5rem">
-    <div class="kpi-card" style="border-color:var(--color-orange)33">
-      <div class="kpi-value" style="color:var(--color-orange)">${totalAdv} €</div>
-      <div class="kpi-label">Total anticipos retenidos</div>
+  <!-- KPI Cards bleu nuit -->
+  <div style="display:flex;gap:10px;margin-bottom:16px">
+    <div style="flex:1;background:#1A2B4A;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">ANTICIPOS</div>
+      <div style="font-size:20px;font-weight:700;color:#ffffff">${totalAdv} €</div>
     </div>
-    <div class="kpi-card" style="border-color:var(--color-primary)33">
-      <div class="kpi-value" style="color:var(--color-primary)">${totalFia} €</div>
-      <div class="kpi-label">Total fianzas retenidas</div>
+    <div style="flex:1;background:#1A2B4A;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">FIANZAS</div>
+      <div style="font-size:20px;font-weight:700;color:#ffffff">${totalFia} €</div>
     </div>
-    <div class="kpi-card" style="border-color:var(--color-green)33;background:linear-gradient(135deg,#fff,#f0f7f3)">
-      <div style="font-size:1.1rem;margin-bottom:0.3rem">💰</div>
-      <div class="kpi-value" style="color:var(--color-green)">${totalAdv + totalFia} €</div>
-      <div class="kpi-label">Total garantías retenidas</div>
+    <div style="flex:1;background:#1A2B4A;border-radius:10px;padding:12px;text-align:center;border:1.5px solid #D4A843">
+      <div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">TOTAL</div>
+      <div style="font-size:20px;font-weight:700;color:#ffffff">${totalAdv + totalFia} €</div>
     </div>
-  </div>
-
-  <!-- Bouton export PDF global -->
-  <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
-    <button class="btn" style="background:#7D2340;color:#FAF6F1;border-color:#7D2340;display:flex;align-items:center;gap:0.5rem" onclick="exportAllDepositsPDF()">
-      📄 Exportar todo en PDF
-    </button>
   </div>
 
   <div class="section-title">DETALLE POR INQUILINO</div>`;
@@ -957,40 +991,45 @@ function renderDeposits() {
     const r = roomById(t.room);
     const d = deposits.find(x => x.tenantId===t.id);
     if (!d) return;
-    html += `<div class="card" style="padding:0;overflow:hidden;margin-bottom:0.8rem">
-      <!-- Header locataire -->
-      <div style="padding:0.9rem 1.2rem;border-bottom:1px solid var(--color-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
-        <div style="display:flex;align-items:center;gap:0.8rem">
-          <div style="width:8px;height:8px;border-radius:50%;background:${r?.color}"></div>
-          <span style="font-weight:600">${t.name}</span>
-          <span style="font-size:0.78rem;color:var(--color-text-muted);font-family:monospace">${r?.name}</span>
+    const total = d.advance + d.fianza;
+
+    html += `<div style="background:#fff;border-radius:12px;overflow:hidden;margin-bottom:8px;border:0.5px solid #B5D4F4">
+      <!-- Header -->
+      <div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #B5D4F4">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:34px;height:34px;border-radius:50%;background:${r?.color}18;border:1.5px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-weight:700;color:${r?.color};font-size:14px">${t.name[0]}</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;color:#1A2B4A">${t.name}</div>
+            <div style="font-size:11px;color:#8a9ab5">${r?.name} · ${t.rent} €/mes</div>
+          </div>
         </div>
-        <div style="display:flex;gap:0.5rem">
-          <button class="btn-sm btn-outline-o" onclick="openDeposit('${t.id}')">Modificar</button>
-          <button class="btn-sm" style="background:#7D2340;color:#FAF6F1;border:1.5px solid #7D2340;border-radius:8px;font-family:monospace;font-size:0.8rem;cursor:pointer" onclick="exportDepositPDF('${t.id}')">📄 PDF</button>
+        <div style="display:flex;gap:6px">
+          <button style="font-size:11px;background:transparent;border:0.5px solid #B5D4F4;color:#1A2B4A;border-radius:20px;padding:3px 10px;cursor:pointer" onclick="openDeposit('${t.id}')">Modificar</button>
+          <button style="font-size:11px;background:#7D2340;border:none;color:#fff;border-radius:20px;padding:3px 10px;cursor:pointer" onclick="exportDepositPDF('${t.id}')">PDF</button>
         </div>
       </div>
 
-      <!-- Corps -->
-      <div style="padding:1rem 1.2rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-
-        <!-- Mes de anticipo -->
-        <div style="background:#FAF6F1;border-radius:10px;padding:0.9rem;border:1px solid var(--color-border)">
-          <div style="font-size:0.7rem;font-family:monospace;color:#8B7355;margin-bottom:0.5rem;letter-spacing:0.08em">MES DE ANTICIPO</div>
-          <div style="font-size:1.3rem;font-weight:700;color:var(--color-orange);margin-bottom:0.3rem">${d.advance} €</div>
+      <!-- 3 colonnes: ANTICIPO | FIANZA | TOTAL -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr">
+        <div style="padding:12px 14px;border-right:0.5px solid #EEF2F8">
+          <div style="font-size:10px;color:#8a9ab5;font-family:monospace;margin-bottom:4px">MES ANTICIPO</div>
+          <div style="font-size:16px;font-weight:700;color:#1A2B4A;margin-bottom:4px">${d.advance} €</div>
           ${depBadge(d.advanceStatus)}
-          ${d.advancePaidDate ? `<div style="font-size:0.72rem;color:#8B7355;font-family:monospace;margin-top:0.4rem">Recibido el ${fmtDate(d.advancePaidDate)}</div>` : ''}
+          ${d.advancePaidDate ? `<div style="font-size:10px;color:#8a9ab5;font-family:monospace;margin-top:4px">${fmtDate(d.advancePaidDate)}</div>` : ''}
         </div>
-
-        <!-- Fianza -->
-        <div style="background:#FAF6F1;border-radius:10px;padding:0.9rem;border:1px solid var(--color-border)">
-          <div style="font-size:0.7rem;font-family:monospace;color:#8B7355;margin-bottom:0.5rem;letter-spacing:0.08em">FIANZA</div>
-          <div style="font-size:1.3rem;font-weight:700;color:var(--color-primary);margin-bottom:0.3rem">${d.fianza} €</div>
+        <div style="padding:12px 14px;border-right:0.5px solid #EEF2F8">
+          <div style="font-size:10px;color:#8a9ab5;font-family:monospace;margin-bottom:4px">FIANZA</div>
+          <div style="font-size:16px;font-weight:700;color:#1A2B4A;margin-bottom:4px">${d.fianza} €</div>
           ${depBadge(d.fianzaStatus)}
-          ${d.fianzaPaidDate ? `<div style="font-size:0.72rem;color:#8B7355;font-family:monospace;margin-top:0.4rem">Recibido el ${fmtDate(d.fianzaPaidDate)}</div>` : ''}
+          ${d.fianzaPaidDate ? `<div style="font-size:10px;color:#8a9ab5;font-family:monospace;margin-top:4px">${fmtDate(d.fianzaPaidDate)}</div>` : ''}
+        </div>
+        <div style="padding:12px 14px;background:#7D234011">
+          <div style="font-size:10px;color:#9B6070;font-family:monospace;margin-bottom:4px">TOTAL</div>
+          <div style="font-size:16px;font-weight:700;color:#7D2340;margin-bottom:4px">${total} €</div>
+          <span style="font-size:10px;background:#7D234022;color:#7D2340;padding:2px 6px;border-radius:10px">Garantías</span>
         </div>
       </div>
-      ${d.notes ? `<div style="padding:0 1.2rem 0.9rem;font-size:0.78rem;color:#8B7355;font-style:italic">${d.notes}</div>` : ''}
+      ${d.notes ? `<div style="padding:8px 14px;font-size:11px;color:#8a9ab5;font-style:italic;border-top:0.5px solid #EEF2F8">${d.notes}</div>` : ''}
     </div>`;
   });
 
@@ -1344,6 +1383,20 @@ function openPayment(tenantId) {
     </div>`);
 }
 
+async function quickPay(tenantId, month) {
+  const t = tenants.find(x => x.id === tenantId);
+  if (!t) return;
+  const p = {
+    id: `p_${tenantId}_${month}`,
+    tenantId,
+    month,
+    amount: t.rent,
+    status: 'paid',
+    date: new Date().toISOString().slice(0,10)
+  };
+  await savePayment(p);
+}
+
 async function savePaymentForm(tenantId) {
   const month  = document.getElementById('p-month').value;
   const amount = Number(document.getElementById('p-amount').value);
@@ -1564,6 +1617,10 @@ window.addEventListener('firebase-ready', () => {
   renderDashboard();
   updateFreeBadges();
   loadData();
+  setTimeout(async () => {
+    await generateMonthlyPayments();
+    await checkLatePayments();
+  }, 2000);
 });
 </script>
 </body>

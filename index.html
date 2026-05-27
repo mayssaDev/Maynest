@@ -482,12 +482,7 @@
   // Lance l'app après Firebase
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
-
 <script>
-// ============================================
-// CONFIGURATION DES CHAMBRES
-// Modifie les noms et couleurs ici
-// ============================================
 const ROOMS = [
   { id: 'r1', name: 'Habitación 1', color: '#7D2340' },
   { id: 'r2', name: 'Habitación 2', color: '#1A2B4A' },
@@ -498,22 +493,17 @@ const ROOMS = [
 
 const CLEAN_TASKS = {
   'Cocina': ['Limpiar las superficies','Lavar los platos comunes','Limpiar el horno/microondas','Vaciar/limpiar el frigorífico','Barrer y lavar el suelo'],
-  'Salón':   ['Aspirar/barrer','Quitar el polvo de los muebles','Limpiar los cristales','Vaciar las papeleras','Ordenar los espacios comunes'],
+  'Salón': ['Aspirar/barrer','Quitar el polvo de los muebles','Limpiar los cristales','Vaciar las papeleras','Ordenar los espacios comunes'],
 };
 
-// ============================================
-// DONNÉES EN MÉMOIRE
-// ============================================
-let tenants  = [];
+let tenants = [];
 let payments = [];
 let deposits = [];
 let cleaning = {};
-let documents = {}; // { tenantId: [{id, name, type, size, date, data}] }
+let documents = {};
 let currentTab = 'dashboard';
+let cleanWeekOffset = 0;
 
-// ============================================
-// NAVIGATION
-// ============================================
 function showTab(tab) {
   document.querySelectorAll('.nav-btn').forEach((b,i) => {
     b.classList.toggle('active', ['dashboard','rooms','tenants','payments','deposits','cleaning','calendar'][i] === tab);
@@ -526,24 +516,20 @@ function showTab(tab) {
 
 function renderTab(tab) {
   if (tab === 'dashboard') renderDashboard();
-  if (tab === 'rooms')     renderRooms();
-  if (tab === 'tenants')   renderTenants();
-  if (tab === 'payments')  renderPayments();
-  if (tab === 'deposits')  renderDeposits();
-  if (tab === 'cleaning')  renderCleaning();
-  if (tab === 'calendar')  renderCalendar();
+  if (tab === 'rooms') renderRooms();
+  if (tab === 'tenants') renderTenants();
+  if (tab === 'payments') renderPayments();
+  if (tab === 'deposits') renderDeposits();
+  if (tab === 'cleaning') renderCleaning();
+  if (tab === 'calendar') renderCalendar();
 }
 
-// ============================================
-// HELPERS
-// ============================================
-function roomById(id)   { return ROOMS.find(r => r.id === id); }
-function fmtDate(d)     { if (!d) return '—'; const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; }
-function daysUntil(d)   { if (!d) return null; return Math.ceil((new Date(d) - new Date()) / 86400000); }
-function getWeek()      { const d = new Date(); return Math.ceil(((d - new Date(d.getFullYear(),0,1))/86400000 + new Date(d.getFullYear(),0,1).getDay()+1)/7); }
+function roomById(id) { return ROOMS.find(r => r.id === id); }
+function fmtDate(d) { if (!d) return '—'; const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; }
+function daysUntil(d) { if (!d) return null; return Math.ceil((new Date(d) - new Date()) / 86400000); }
+function getWeek() { const d = new Date(); return Math.ceil(((d - new Date(d.getFullYear(),0,1))/86400000 + new Date(d.getFullYear(),0,1).getDay()+1)/7); }
 function currentMonth() { return new Date().toISOString().slice(0,7); }
-
-function activeTenants(){ return tenants.filter(t => t.status !== 'ended'); }
+function activeTenants() { return tenants.filter(t => t.status !== 'ended'); }
 
 function badge(label, color) {
   return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${label}</span>`;
@@ -551,76 +537,83 @@ function badge(label, color) {
 
 function statusBadge(s) {
   const map = {
-    active:  ['Activo',      '#2E7D8C'],
-    leaving: ['En salida',  '#D4A843'],
-    ended:   ['Terminado',    '#5B7FA6']
+    active: ['Activo', '#2E7D8C'],
+    leaving: ['En salida', '#D4A843'],
+    ended: ['Terminado', '#5B7FA6']
   };
-  return badge(map[s][0], map[s][1]);
+  const item = map[s] || ['Desconocido', '#5B7FA6'];
+  return badge(item[0], item[1]);
 }
 
 function payBadge(s) {
   const map = {
-    paid:    ['Pagado',        '#2E7D8C'],
-    late:    ['Atrasado',   '#7D2340'],
-    pending: ['Pendiente',  '#D4A843']
+    paid: ['Pagado', '#2E7D8C'],
+    late: ['Atrasado', '#7D2340'],
+    pending: ['Pendiente', '#D4A843']
   };
-  return badge(map[s][0], map[s][1]);
+  const item = map[s] || ['Pendiente', '#D4A843'];
+  return badge(item[0], item[1]);
 }
 
 function depBadge(s) {
   const map = {
-    held:     ['Retenido',  '#1A2B4A'],
-    returned: ['Devuelto',   '#2E7D8C'],
-    partial:  ['Parcial', '#D4A843']
+    held: ['Retenido', '#1A2B4A'],
+    returned: ['Devuelto', '#2E7D8C'],
+    partial: ['Parcial', '#D4A843']
   };
-  return badge(map[s][0], map[s][1]);
+  const item = map[s] || ['Retenido', '#1A2B4A'];
+  return badge(item[0], item[1]);
 }
 
-// ============================================
-// FIREBASE CRUD
-// ============================================
-// Firebase functions loaded from window
-function getDb()  { return window.db; }
+function getDb() { return window.db; }
 function getCol() { return window.dbFns.collection; }
 function getDoc() { return window.dbFns.doc; }
 function getSet() { return window.dbFns.setDoc; }
 function getDel() { return window.dbFns.deleteDoc; }
-function getSnap(){ return window.dbFns.onSnapshot; }
+function getSnap() { return window.dbFns.onSnapshot; }
 
 async function saveTenant(t) {
-  const db = getDb(); const docFn = getDoc(); const setFn = getSet();
-  await setFn(docFn(db, 'tenants', t.id), t);
+  await getSet()(getDoc()(getDb(), 'tenants', t.id), t);
 }
+
 async function deleteTenant(id) {
-  const db = getDb(); const docFn = getDoc(); const delFn = getDel();
+  const db = getDb();
+  const docFn = getDoc();
+  const delFn = getDel();
+  const tenantPayments = payments.filter(p => p.tenantId === id);
+
   await delFn(docFn(db, 'tenants', id));
-  deposits = deposits.filter(d => d.tenantId !== id);
   await delFn(docFn(db, 'deposits', id));
+
+  await Promise.all(
+    tenantPayments.map(p => delFn(docFn(db, 'payments', p.id)))
+  );
+
+  deposits = deposits.filter(d => d.tenantId !== id);
   tenants = tenants.filter(t => t.id !== id);
   payments = payments.filter(p => p.tenantId !== id);
+
+  closeModal();
   renderTab(currentTab);
   updateFreeBadges();
 }
+
 async function savePayment(p) {
-  const db = getDb(); const docFn = getDoc(); const setFn = getSet();
-  await setFn(docFn(db, 'payments', p.id), p);
-}
-async function saveDeposit(d) {
-  const db = getDb(); const docFn = getDoc(); const setFn = getSet();
-  await setFn(docFn(db, 'deposits', d.tenantId), d);
-}
-async function saveCleaning(c) {
-  const db = getDb(); const docFn = getDoc(); const setFn = getSet();
-  await setFn(docFn(db, 'cleaning', 'data'), c);
-}
-async function saveDocuments(tenantId, files) {
-  const db = getDb(); const docFn = getDoc(); const setFn = getSet();
-  await setFn(docFn(db, 'documents', tenantId), { files });
+  await getSet()(getDoc()(getDb(), 'payments', p.id), p);
 }
 
-// ============================================
-// LOAD DATA
-// ============================================
+async function saveDeposit(d) {
+  await getSet()(getDoc()(getDb(), 'deposits', d.tenantId), d);
+}
+
+async function saveCleaning(c) {
+  await getSet()(getDoc()(getDb(), 'cleaning', 'data'), c);
+}
+
+async function saveDocuments(tenantId, files) {
+  await getSet()(getDoc()(getDb(), 'documents', tenantId), { files });
+}
+
 function loadData(onTenantsReady) {
   const db = getDb();
   const onSnapshot = getSnap();
@@ -631,33 +624,42 @@ function loadData(onTenantsReady) {
     tenants = snap.docs.map(d => d.data());
     renderTab(currentTab);
     updateFreeBadges();
+
     if (!tenantsLoaded && onTenantsReady) {
       tenantsLoaded = true;
       onTenantsReady();
     }
   });
+
   onSnapshot(collection(db,'payments'), snap => {
-    payments = snap.docs.map(d => d.data()).filter(p => p.tenantId); // Filtrer les paiements sans tenantId
+    payments = snap.docs.map(d => d.data()).filter(p => {
+      const tenantExists = tenants.some(t => t.id === p.tenantId);
+      return p.tenantId && tenantExists;
+    });
     renderTab(currentTab);
   });
+
   onSnapshot(collection(db,'deposits'), snap => {
     deposits = snap.docs.map(d => d.data());
     renderTab(currentTab);
   });
+
   onSnapshot(collection(db,'cleaning'), snap => {
-    snap.docs.forEach(d => { if(d.id==='data') cleaning = d.data(); });
-    if(currentTab==='cleaning') renderCleaning();
+    snap.docs.forEach(d => {
+      if (d.id === 'data') cleaning = d.data();
+    });
+    if (currentTab === 'cleaning') renderCleaning();
   });
+
   onSnapshot(collection(db,'documents'), snap => {
     documents = {};
-    snap.docs.forEach(d => { documents[d.id] = d.data().files || []; });
-    if(currentTab==='tenants') renderTenants();
+    snap.docs.forEach(d => {
+      documents[d.id] = d.data().files || [];
+    });
+    if (currentTab === 'tenants') renderTenants();
   });
 }
 
-// ============================================
-// FREE BADGES HEADER
-// ============================================
 function updateFreeBadges() {
   const occupied = activeTenants().map(t => t.room);
   const free = ROOMS.filter(r => !occupied.includes(r.id));
@@ -666,16 +668,25 @@ function updateFreeBadges() {
   ).join('');
 }
 
-// ============================================
-// DASHBOARD
-// ============================================
 function renderDashboard() {
   const active = activeTenants();
-  const totalRev = active.reduce((s,t) => s + (t.rent||0), 0);
+  const totalRev = active.reduce((s,t) => s + (t.rent || 0), 0);
   const mon = currentMonth();
-  const paidAmt = payments.filter(p => p.month===mon && p.status==='paid').reduce((s,p) => s+p.amount, 0);
-  const late = payments.filter(p => p.month===mon && p.status==='late');
-  const exits = tenants.filter(t => t.exitDate && daysUntil(t.exitDate)<=60 && t.status!=='ended');
+
+  const paidAmt = payments
+    .filter(p => p.month === mon && p.status === 'paid')
+    .reduce((s,p) => s + (p.amount || 0), 0);
+
+  const late = payments.filter(p => {
+    const t = tenants.find(x => x.id === p.tenantId);
+    return p.month === mon && p.status === 'late' && t && t.status !== 'ended';
+  });
+
+  const exits = tenants.filter(t =>
+    t.exitDate &&
+    daysUntil(t.exitDate) <= 60 &&
+    t.status !== 'ended'
+  );
 
   let html = `<h1 class="page-title">Panel principal</h1>
   <div class="card-grid">
@@ -701,17 +712,21 @@ function renderDashboard() {
     </div>
   </div>`;
 
-  // Alertes
   if (late.length > 0 || exits.length > 0) {
     html += `<div class="section-title">ALERTAS</div>`;
+
     late.forEach(p => {
-      const t = tenants.find(x => x.id===p.tenantId);
-      const r = roomById(t?.room);
+      const t = tenants.find(x => x.id === p.tenantId);
+      if (!t) return;
+
+      const r = roomById(t.room);
+
       html += `<div class="alert" style="background:var(--color-red)11;border:1px solid var(--color-red)44">
-        <span style="color:var(--color-red);font-size:0.88rem">⚠ Pago en retard — <strong>${t?.name}</strong> · ${r?.name}</span>
-        <span style="color:var(--color-red);font-family:monospace;font-size:0.82rem">${p.amount} €</span>
+        <span style="color:var(--color-red);font-size:0.88rem">⚠ Pago en retard — <strong>${t.name}</strong> · ${r?.name || ''}</span>
+        <span style="color:var(--color-red);font-family:monospace;font-size:0.82rem">${p.amount || 0} €</span>
       </div>`;
     });
+
     exits.forEach(t => {
       const d = daysUntil(t.exitDate);
       html += `<div class="alert" style="background:var(--color-primary)11;border:1px solid var(--color-primary)44">
@@ -721,11 +736,6 @@ function renderDashboard() {
     });
   }
 
-  // Inquilinos actifs
-
-  // ============================================
-  // CARTE - Change l'adresse ici !
-  // ============================================
   const ADRESSE = "Calle de las Flores, 12, Almería, España";
   const MAPS_EMBED = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3178.5!2d-2.4637!3d36.8403!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd7a9c3b3b3b3b3b%3A0x0!2zQWxtZXLDrWE!5e0!3m2!1sfr!2ses!4v1234567890";
 
@@ -746,29 +756,17 @@ function renderDashboard() {
         Abrir Maps
       </a>
     </div>
-    <iframe
-      src="${MAPS_EMBED}"
-      width="100%"
-      height="220"
-      style="border:0;display:block"
-      allowfullscreen=""
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade">
-    </iframe>
+    <iframe src="${MAPS_EMBED}" width="100%" height="220" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
   </div>`;
 
   document.getElementById('tab-dashboard').innerHTML = html;
 }
 
-// ============================================
-// ROOMS
-// ============================================
 function renderRooms() {
-  let html = `<h1 class="page-title">Habitaciones</h1>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">`;
+  let html = `<h1 class="page-title">Habitaciones</h1><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">`;
 
   ROOMS.forEach((room, index) => {
-    const tenant = tenants.find(t => t.room===room.id && t.status!=='ended');
+    const tenant = tenants.find(t => t.room === room.id && t.status !== 'ended');
     const isLast = index === ROOMS.length - 1;
     const gridStyle = isLast && ROOMS.length % 2 !== 0 ? 'grid-column:1/3' : '';
 
@@ -781,7 +779,7 @@ function renderRooms() {
         </div>`;
 
     if (tenant) {
-      html += `<div style="font-size:12px;font-weight:600;color:#042C53;margin-bottom:2px">${tenant.name.split(' ')[0]} ${tenant.name.split(' ')[1]?.[0]||''}.</div>
+      html += `<div style="font-size:12px;font-weight:600;color:#042C53;margin-bottom:2px">${tenant.name.split(' ')[0]} ${tenant.name.split(' ')[1]?.[0] || ''}.</div>
         <div style="font-size:11px;color:#5B7FA6;font-family:monospace;margin-bottom:4px">${tenant.rent} €/mois</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
           <span style="font-size:10px;background:#2E7D8C18;color:#2E7D8C;padding:2px 7px;border-radius:10px">Activo</span>
@@ -802,9 +800,6 @@ function renderRooms() {
   document.getElementById('tab-rooms').innerHTML = html;
 }
 
-// ============================================
-// TENANTS
-// ============================================
 function renderTenants() {
   let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
     <h1 class="page-title" style="margin:0">Inquilinos</h1>
@@ -817,30 +812,26 @@ function renderTenants() {
 
   tenants.forEach(t => {
     const r = roomById(t.room);
+
     html += `<div style="background:#FFFFFF;border-radius:12px;border:0.5px solid #B5D4F4;margin-bottom:10px;overflow:hidden;box-shadow:0 2px 8px rgba(26,43,74,0.06)">
       <div style="display:flex;align-items:center;gap:12px;padding:14px 16px">
-        <div style="width:42px;height:42px;border-radius:50%;background:${r?.color}18;border:1.5px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:${r?.color};flex-shrink:0">${t.name[0]}</div>
+        <div style="width:42px;height:42px;border-radius:50%;background:${r?.color}18;border:1.5px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:${r?.color};flex-shrink:0">${t.name?.[0] || '?'}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:15px;color:#1A2B4A;margin-bottom:3px">${t.name}</div>
-          <div style="font-size:12px;color:#5B7FA6;margin-bottom:3px">${r?.name} · ${t.rent} €/mois</div>
+          <div style="font-size:12px;color:#5B7FA6;margin-bottom:3px">${r?.name || '—'} · ${t.rent || 0} €/mois</div>
           <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <span style="font-size:11px;color:#2E7D8C;font-family:monospace">
-              <i class="ti ti-phone" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${t.phone||'—'}
-            </span>
-            <span style="font-size:11px;color:#5B7FA6;font-family:monospace">
-              <i class="ti ti-calendar" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${fmtDate(t.entryDate)} → ${fmtDate(t.exitDate)}
-            </span>
+            <span style="font-size:11px;color:#2E7D8C;font-family:monospace"><i class="ti ti-phone" style="font-size:12px;vertical-align:-1px"></i> ${t.phone || '—'}</span>
+            <span style="font-size:11px;color:#5B7FA6;font-family:monospace"><i class="ti ti-calendar" style="font-size:12px;vertical-align:-1px"></i> ${fmtDate(t.entryDate)} → ${fmtDate(t.exitDate)}</span>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
           ${statusBadge(t.status)}
-          <div style="display:flex;gap:6px">
-            <button style="background:transparent;border:0.5px solid #B5D4F4;border-radius:8px;padding:4px 8px;cursor:pointer" onclick="openEditTenant('${t.id}')" aria-label="Modificar">
-              <i class="ti ti-edit" style="font-size:14px;color:#1A2B4A" aria-hidden="true"></i>
-            </button>
-          </div>
+          <button style="background:transparent;border:0.5px solid #B5D4F4;border-radius:8px;padding:4px 8px;cursor:pointer" onclick="openEditTenant('${t.id}')" aria-label="Modificar">
+            <i class="ti ti-edit" style="font-size:14px;color:#1A2B4A"></i>
+          </button>
         </div>
       </div>
+
       <div style="border-top:0.5px solid #B5D4F4;padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap;background:#F8FAFD">
         <button style="background:transparent;border:0.5px solid #2E7D8C;color:#2E7D8C;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openPayment('${t.id}')">Pago</button>
         <button style="background:transparent;border:0.5px solid #D4A843;color:#9A7520;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openDeposit('${t.id}')">Fianza</button>
@@ -848,34 +839,32 @@ function renderTenants() {
         <button style="background:transparent;border:0.5px solid #25D366;color:#25D366;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openWhatsApp('${t.id}')">WhatsApp</button>
         <button style="background:transparent;border:0.5px solid #7D2340;color:#7D2340;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="confirmDelete('${t.id}')">Eliminar</button>
       </div>
+
       <div style="border-top:0.5px solid #EEF2F8;padding:10px 16px;background:#fff">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:11px;color:#5B7FA6;font-family:monospace">
-            <i class="ti ti-folder" style="font-size:12px;vertical-align:-1px;color:#D4A843" aria-hidden="true"></i>
-            DOCUMENTOS (${(documents[t.id]||[]).length})
-          </span>
+          <span style="font-size:11px;color:#5B7FA6;font-family:monospace"><i class="ti ti-folder" style="font-size:12px;vertical-align:-1px;color:#D4A843"></i> DOCUMENTOS (${(documents[t.id] || []).length})</span>
           <label style="cursor:pointer;background:#1A2B4A;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;font-weight:600">
             + Añadir
             <input type="file" style="display:none" accept="*/*" onchange="uploadDoc('${t.id}', this)">
           </label>
         </div>
-        ${(documents[t.id]||[]).length === 0 ?
-          `<div style="text-align:center;padding:8px;background:#F8FAFD;border-radius:8px;border:1px dashed #B5D4F4;color:#5B7FA6;font-size:11px;font-family:monospace">Sin documentos</div>` :
-          (documents[t.id]||[]).map(doc => {
+        ${(documents[t.id] || []).length === 0 ? `<div style="text-align:center;padding:8px;background:#F8FAFD;border-radius:8px;border:1px dashed #B5D4F4;color:#5B7FA6;font-size:11px;font-family:monospace">Sin documentos</div>` :
+          (documents[t.id] || []).map(doc => {
             const isImg = doc.type && doc.type.startsWith('image/');
             const isPdf = doc.type === 'application/pdf';
             const icon = isPdf ? 'ti-file-type-pdf' : isImg ? 'ti-photo' : 'ti-paperclip';
             const sizeMB = (doc.size / (1024*1024)).toFixed(1);
+
             return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:#F8FAFD;border-radius:8px;border:0.5px solid #B5D4F4;margin-bottom:4px">
-              <i class="ti ${icon}" style="font-size:16px;color:#2E508C;flex-shrink:0" aria-hidden="true"></i>
+              <i class="ti ${icon}" style="font-size:16px;color:#2E508C;flex-shrink:0"></i>
               <div style="flex:1;min-width:0">
                 <div style="font-size:12px;font-weight:500;color:#1A2B4A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${doc.name}</div>
                 <div style="font-size:10px;color:#5B7FA6;font-family:monospace">${doc.date} · ${sizeMB} MB</div>
               </div>
               <div style="display:flex;gap:4px;flex-shrink:0">
-                <button style="background:transparent;border:0.5px solid #B5D4F4;border-radius:6px;padding:3px 6px;cursor:pointer" onclick="viewDoc('${t.id}','${doc.id}')" aria-label="Voir"><i class="ti ti-eye" style="font-size:12px;color:#1A2B4A" aria-hidden="true"></i></button>
-                <button style="background:transparent;border:0.5px solid #B5D4F4;border-radius:6px;padding:3px 6px;cursor:pointer" onclick="downloadDoc('${t.id}','${doc.id}')" aria-label="Telecharger"><i class="ti ti-download" style="font-size:12px;color:#2E7D8C" aria-hidden="true"></i></button>
-                <button style="background:transparent;border:0.5px solid #7D234044;border-radius:6px;padding:3px 6px;cursor:pointer" onclick="deleteDoc('${t.id}','${doc.id}')" aria-label="Eliminar"><i class="ti ti-trash" style="font-size:12px;color:#7D2340" aria-hidden="true"></i></button>
+                <button style="background:transparent;border:0.5px solid #B5D4F4;border-radius:6px;padding:3px 6px;cursor:pointer" onclick="viewDoc('${t.id}','${doc.id}')"><i class="ti ti-eye" style="font-size:12px;color:#1A2B4A"></i></button>
+                <button style="background:transparent;border:0.5px solid #B5D4F4;border-radius:6px;padding:3px 6px;cursor:pointer" onclick="downloadDoc('${t.id}','${doc.id}')"><i class="ti ti-download" style="font-size:12px;color:#2E7D8C"></i></button>
+                <button style="background:transparent;border:0.5px solid #7D234044;border-radius:6px;padding:3px 6px;cursor:pointer" onclick="deleteDoc('${t.id}','${doc.id}')"><i class="ti ti-trash" style="font-size:12px;color:#7D2340"></i></button>
               </div>
             </div>`;
           }).join('')
@@ -887,87 +876,71 @@ function renderTenants() {
   document.getElementById('tab-tenants').innerHTML = html;
 }
 
-
-// ============================================
-// PAYMENTS
-// ============================================
 function renderPayments() {
-  const months = [...new Set(payments.map(p => p.month))].sort().reverse();
+  const months = [...new Set(payments.map(p => p.month).filter(Boolean))].sort().reverse();
   if (!months.includes(currentMonth())) months.unshift(currentMonth());
 
   let html = `<h1 class="page-title">Pagos</h1>`;
+
   months.slice(0,3).forEach(month => {
     const [y,m] = month.split('-');
-    const label = new Date(y,m-1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-    const monthPays = payments.filter(p => p.month===month);
-    const total = monthPays.filter(p=>p.status==='paid').reduce((s,p)=>s+p.amount,0);
-    html += `<div style="margin-bottom:2rem">
-      <div class="section-title">${label.toUpperCase()}</div>`;
+    const label = new Date(y, m - 1).toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
+    const monthPays = payments.filter(p => p.month === month);
+    const total = monthPays.filter(p => p.status === 'paid').reduce((s,p) => s + (p.amount || 0), 0);
+
+    html += `<div style="margin-bottom:2rem"><div class="section-title">${label.toUpperCase()}</div>`;
+
     activeTenants().forEach(t => {
       const r = roomById(t.room);
-      const p = monthPays.find(p => p.tenantId===t.id);
+      const p = monthPays.find(p => p.tenantId === t.id);
+
       html += `<div class="card" style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem">
         <div style="width:8px;height:8px;border-radius:50%;background:${r?.color};flex-shrink:0"></div>
         <div style="flex:1">
           <div style="font-weight:500;font-size:0.9rem">${t.name}</div>
-          <div style="font-size:0.75rem;color:var(--color-text-muted);font-family:monospace">${r?.name}</div>
+          <div style="font-size:0.75rem;color:var(--color-text-muted);font-family:monospace">${r?.name || '—'}</div>
         </div>
-        <div style="font-family:monospace;color:var(--color-primary);font-weight:700">${t.rent} €</div>
+        <div style="font-family:monospace;color:var(--color-primary);font-weight:700">${t.rent || 0} €</div>
         ${p ? `<div style="display:flex;align-items:center;gap:8px">
           ${payBadge(p.status)}
-          ${p.status !== 'paid' ? `<button onclick="quickPay('${t.id}','${mon}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;cursor:pointer">✓ Pagado</button>` : ''}
-        </div>` : `<button onclick="quickPay('${t.id}','${mon}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;cursor:pointer">✓ Pagado</button>`}
+          ${p.status !== 'paid' ? `<button onclick="quickPay('${t.id}','${month}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;cursor:pointer">✓ Pagado</button>` : ''}
+        </div>` : `<button onclick="quickPay('${t.id}','${month}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;cursor:pointer">✓ Pagado</button>`}
       </div>`;
     });
+
     html += `<div style="padding:0.7rem 1rem;background:#EEF2F8;border-radius:8px;border:0.5px solid #B5D4F4;display:flex;justify-content:space-between">
       <span style="font-size:0.8rem;color:var(--color-text-muted);font-family:monospace">Total cobrado</span>
       <span style="font-family:monospace;color:var(--color-green);font-weight:700">${total} €</span>
     </div></div>`;
   });
+
   document.getElementById('tab-payments').innerHTML = html;
 }
 
-// ============================================
-// DEPOSITS
-// ============================================
 function renderDeposits() {
-  const totalAdv = deposits.filter(d=>d.advanceStatus==='held').reduce((s,d)=>s+d.advance,0);
-  const totalFia = deposits.filter(d=>d.fianzaStatus==='held').reduce((s,d)=>s+d.fianza,0);
+  const totalAdv = deposits.filter(d => d.advanceStatus === 'held').reduce((s,d) => s + (d.advance || 0), 0);
+  const totalFia = deposits.filter(d => d.fianzaStatus === 'held').reduce((s,d) => s + (d.fianza || 0), 0);
 
   let html = `<h1 class="page-title">Garantías</h1>
-
   <div class="card-grid" style="margin-bottom:16px">
-    <div class="kpi-card" style="background:#1A2B4A;border:none;text-align:center">
-      <div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">ANTICIPOS</div>
-      <div style="font-size:20px;font-weight:700;color:#ffffff">${totalAdv} €</div>
-    </div>
-    <div class="kpi-card" style="background:#1A2B4A;border:none;text-align:center">
-      <div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">FIANZAS</div>
-      <div style="font-size:20px;font-weight:700;color:#ffffff">${totalFia} €</div>
-    </div>
-    <div class="kpi-card" style="background:#1A2B4A;border:1.5px solid #D4A843;text-align:center">
-      <div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">TOTAL</div>
-      <div style="font-size:20px;font-weight:700;color:#ffffff">${totalAdv + totalFia} €</div>
-    </div>
+    <div class="kpi-card" style="background:#1A2B4A;border:none;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">ANTICIPOS</div><div style="font-size:20px;font-weight:700;color:#ffffff">${totalAdv} €</div></div>
+    <div class="kpi-card" style="background:#1A2B4A;border:none;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">FIANZAS</div><div style="font-size:20px;font-weight:700;color:#ffffff">${totalFia} €</div></div>
+    <div class="kpi-card" style="background:#1A2B4A;border:1.5px solid #D4A843;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px">TOTAL</div><div style="font-size:20px;font-weight:700;color:#ffffff">${totalAdv + totalFia} €</div></div>
   </div>
-
   <div class="section-title">DETALLE POR INQUILINO</div>`;
 
   tenants.forEach(t => {
     const r = roomById(t.room);
-    const d = deposits.find(x => x.tenantId===t.id);
+    const d = deposits.find(x => x.tenantId === t.id);
     if (!d) return;
-    const total = d.advance + d.fianza;
+
+    const total = (d.advance || 0) + (d.fianza || 0);
 
     html += `<div style="background:#fff;border-radius:12px;overflow:hidden;margin-bottom:8px;border:0.5px solid #B5D4F4">
-      <!-- Header -->
       <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #B5D4F4">
         <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:32px;height:32px;border-radius:50%;background:${r?.color}18;border:1.5px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-weight:700;color:${r?.color};font-size:13px">${t.name[0]}</div>
-          <div>
-            <div style="font-weight:600;font-size:13px;color:#1A2B4A">${t.name}</div>
-            <div style="font-size:10px;color:#8a9ab5">${r?.name} · ${t.rent} €/mes</div>
-          </div>
+          <div style="width:32px;height:32px;border-radius:50%;background:${r?.color}18;border:1.5px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-weight:700;color:${r?.color};font-size:13px">${t.name?.[0] || '?'}</div>
+          <div><div style="font-weight:600;font-size:13px;color:#1A2B4A">${t.name}</div><div style="font-size:10px;color:#8a9ab5">${r?.name || '—'} · ${t.rent || 0} €/mes</div></div>
         </div>
         <div style="display:flex;gap:5px">
           <button style="font-size:10px;background:transparent;border:0.5px solid #B5D4F4;color:#1A2B4A;border-radius:20px;padding:2px 8px;cursor:pointer" onclick="openDeposit('${t.id}')">Modificar</button>
@@ -975,23 +948,21 @@ function renderDeposits() {
         </div>
       </div>
 
-      <!-- ANTICIPO + FIANZA 2 colonnes -->
       <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:0.5px solid #EEF2F8">
         <div style="padding:10px 12px;border-right:0.5px solid #EEF2F8">
           <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">MES ANTICIPO</div>
-          <div style="font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:3px">${d.advance} €</div>
+          <div style="font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:3px">${d.advance || 0} €</div>
           ${depBadge(d.advanceStatus)}
           <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-top:3px">${d.advancePaidDate ? fmtDate(d.advancePaidDate) : '—'}</div>
         </div>
         <div style="padding:10px 12px">
           <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">FIANZA</div>
-          <div style="font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:3px">${d.fianza} €</div>
+          <div style="font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:3px">${d.fianza || 0} €</div>
           ${depBadge(d.fianzaStatus)}
           <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-top:3px">${d.fianzaPaidDate ? fmtDate(d.fianzaPaidDate) : '—'}</div>
         </div>
       </div>
 
-      <!-- TOTAL en bas full width -->
       <div style="padding:8px 14px;background:#7D234011;display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:10px;color:#9B6070;font-family:monospace">TOTAL GARANTÍAS</span>
         <span style="font-size:16px;font-weight:700;color:#7D2340">${total} €</span>
@@ -1003,146 +974,47 @@ function renderDeposits() {
   document.getElementById('tab-deposits').innerHTML = html;
 }
 
-// ============================================
-// PDF EXPORT
-// ============================================
 function exportDepositPDF(tenantId) {
-  const t = tenants.find(x => x.id===tenantId);
-  const d = deposits.find(x => x.tenantId===tenantId);
+  const t = tenants.find(x => x.id === tenantId);
+  const d = deposits.find(x => x.tenantId === tenantId);
   const r = roomById(t?.room);
   if (!t || !d) return;
 
-  const html = `
-    <html><head><meta charset="UTF-8">
-    <style>
-      body { font-family: Georgia, serif; color: #2C1810; padding: 40px; background: #FAF6F1; }
-      .header { background: #7D2340; color: #FAF6F1; padding: 30px; border-radius: 10px; margin-bottom: 30px; text-align: center; }
-      .title { font-size: 28px; font-weight: bold; letter-spacing: 4px; margin-bottom: 5px; }
-      .subtitle { font-size: 12px; color: #C9A96E; letter-spacing: 6px; }
-      .section { background: white; border: 1px solid #E8DDD4; border-radius: 10px; padding: 25px; margin-bottom: 20px; }
-      .section-title { font-size: 11px; color: #8B7355; letter-spacing: 8px; text-transform: uppercase; margin-bottom: 15px; }
-      .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #E8DDD4; }
-      .label { color: #8B7355; font-size: 14px; }
-      .value { font-weight: bold; color: #2C1810; font-size: 14px; }
-      .amount { font-size: 24px; font-weight: bold; color: #7D2340; margin: 10px 0; }
-      .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-      .held { background: #7D234022; color: #7D2340; }
-      .returned { background: #2D7A4F22; color: #2D7A4F; }
-      .partial { background: #C9A96E22; color: #8B6914; }
-      .footer { text-align: center; color: #8B7355; font-size: 11px; margin-top: 30px; letter-spacing: 2px; }
-      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    </style>
-    </head><body>
-    <div class="header">
-      <div class="title">MAYNEST</div>
-      <div class="subtitle">ATTESTATION DE GARANTIE</div>
-    </div>
-
+  const html = `<html><head><meta charset="UTF-8"><style>
+    body{font-family:Georgia,serif;color:#2C1810;padding:40px;background:#FAF6F1}
+    .header{background:#7D2340;color:#FAF6F1;padding:30px;border-radius:10px;margin-bottom:30px;text-align:center}
+    .title{font-size:28px;font-weight:bold;letter-spacing:4px}
+    .subtitle{font-size:12px;color:#C9A96E;letter-spacing:6px}
+    .section{background:white;border:1px solid #E8DDD4;border-radius:10px;padding:25px;margin-bottom:20px}
+    .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E8DDD4}
+    .label{color:#8B7355}.value{font-weight:bold}.amount{font-size:24px;font-weight:bold;color:#7D2340}
+    .footer{text-align:center;color:#8B7355;font-size:11px;margin-top:30px}
+  </style></head><body>
+    <div class="header"><div class="title">MAYNEST</div><div class="subtitle">ATTESTATION DE GARANTIE</div></div>
     <div class="section">
-      <div class="section-title">Informations Locataire</div>
       <div class="row"><span class="label">Nombre completo</span><span class="value">${t.name}</span></div>
-      <div class="row"><span class="label">Habitación</span><span class="value">${r?.name}</span></div>
-      <div class="row"><span class="label">Email</span><span class="value">${t.email||'—'}</span></div>
-      <div class="row"><span class="label">Teléfono</span><span class="value">${t.phone||'—'}</span></div>
+      <div class="row"><span class="label">Habitación</span><span class="value">${r?.name || '—'}</span></div>
+      <div class="row"><span class="label">Email</span><span class="value">${t.email || '—'}</span></div>
+      <div class="row"><span class="label">Teléfono</span><span class="value">${t.phone || '—'}</span></div>
       <div class="row"><span class="label">Fecha de entrada</span><span class="value">${fmtDate(t.entryDate)}</span></div>
       <div class="row"><span class="label">Fecha de salida</span><span class="value">${fmtDate(t.exitDate)}</span></div>
-      <div class="row"><span class="label">Loyer mensuel</span><span class="value">${t.rent} €</span></div>
+      <div class="row"><span class="label">Loyer mensuel</span><span class="value">${t.rent || 0} €</span></div>
     </div>
-
-    <div class="grid">
-      <div class="section">
-        <div class="section-title">Mois d'Avance</div>
-        <div class="amount">${d.advance} €</div>
-        <span class="badge ${d.advanceStatus}">${d.advanceStatus==='held'?'Retenido':d.advanceStatus==='returned'?'Devuelto':'Parcial'}</span>
-        ${d.advancePaidDate ? `<div class="row" style="margin-top:10px"><span class="label">Fecha recibido</span><span class="value">${fmtDate(d.advancePaidDate)}</span></div>` : ''}
-      </div>
-      <div class="section">
-        <div class="section-title">Fianza</div>
-        <div class="amount">${d.fianza} €</div>
-        <span class="badge ${d.fianzaStatus}">${d.fianzaStatus==='held'?'Retenido':d.fianzaStatus==='returned'?'Devuelto':'Parcial'}</span>
-        ${d.fianzaPaidDate ? `<div class="row" style="margin-top:10px"><span class="label">Fecha recibido</span><span class="value">${fmtDate(d.fianzaPaidDate)}</span></div>` : ''}
-      </div>
-    </div>
-
-    ${d.notes ? `<div class="section"><div class="section-title">Notas</div><p style="color:#8B7355;font-style:italic">${d.notes}</p></div>` : ''}
-
-    <div class="section" style="background:#7D234011;border-color:#7D234033">
-      <div class="row"><span class="label">Total garantías retenidas</span><span class="value" style="color:#7D2340;font-size:18px">${d.advance + d.fianza} €</span></div>
-    </div>
-
-    <div class="footer">
-      Document généré le ${new Date().toLocaleDateString('fr-FR')} · MayNest Gestion Locative
-    </div>
-    </body></html>`;
-
-  const win = window.open('', '_blank');
-  win.document.write(html);
-  win.document.close();
-  setTimeout(() => win.print(), 500);
-}
-
-function exportAllDepositsPDF() {
-  const rows = tenants.map(t => {
-    const d = deposits.find(x => x.tenantId===t.id);
-    const r = roomById(t?.room);
-    if (!d) return '';
-    return `
-      <tr>
-        <td>${t.name}</td>
-        <td>${r?.name}</td>
-        <td>${t.rent} €</td>
-        <td><strong>${d.advance} €</strong><br><small>${d.advanceStatus==='held'?'Retenido':d.advanceStatus==='returned'?'Devuelto':'Parcial'}</small></td>
-        <td><strong>${d.fianza} €</strong><br><small>${d.fianzaStatus==='held'?'Retenido':d.fianzaStatus==='returned'?'Devuelto':'Parcial'}</small></td>
-        <td><strong>${d.advance + d.fianza} €</strong></td>
-      </tr>`;
-  }).join('');
-
-  const totalAll = deposits.reduce((s,d) => s + d.advance + d.fianza, 0);
-
-  const html = `
-    <html><head><meta charset="UTF-8">
-    <style>
-      body { font-family: Georgia, serif; color: #2C1810; padding: 40px; background: #FAF6F1; }
-      .header { background: #7D2340; color: #FAF6F1; padding: 30px; border-radius: 10px; margin-bottom: 30px; text-align: center; }
-      .title { font-size: 28px; font-weight: bold; letter-spacing: 4px; }
-      .subtitle { font-size: 12px; color: #C9A96E; letter-spacing: 6px; margin-top: 5px; }
-      table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; }
-      th { background: #7D2340; color: #FAF6F1; padding: 12px; text-align: left; font-size: 11px; letter-spacing: 3px; }
-      td { padding: 12px; border-bottom: 1px solid #E8DDD4; font-size: 13px; }
-      tr:last-child td { border-bottom: none; }
-      .total { background: #7D234011; font-weight: bold; color: #7D2340; font-size: 16px; text-align: right; padding: 15px; border-radius: 8px; margin-top: 20px; }
-      .footer { text-align: center; color: #8B7355; font-size: 11px; margin-top: 30px; }
-    </style>
-    </head><body>
-    <div class="header">
-      <div class="title">MAYNEST</div>
-      <div class="subtitle">RÉCAPITULATIF DES GARANTIES</div>
-    </div>
-    <table>
-      <thead><tr>
-        <th>LOCATAIRE</th><th>CHAMBRE</th><th>LOYER</th>
-        <th>AVANCE</th><th>FIANZA</th><th>TOTAL</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="total">Total garantías retenidas : ${totalAll} €</div>
+    <div class="section"><h3>Mois d'Avance</h3><div class="amount">${d.advance || 0} €</div><p>${d.advanceStatus || 'held'}</p></div>
+    <div class="section"><h3>Fianza</h3><div class="amount">${d.fianza || 0} €</div><p>${d.fianzaStatus || 'held'}</p></div>
+    <div class="section"><div class="row"><span class="label">Total garantías</span><span class="value">${(d.advance || 0) + (d.fianza || 0)} €</span></div></div>
     <div class="footer">Document généré le ${new Date().toLocaleDateString('fr-FR')} · MayNest Gestion Locative</div>
-    </body></html>`;
+  </body></html>`;
 
   const win = window.open('', '_blank');
   win.document.write(html);
   win.document.close();
   setTimeout(() => win.print(), 500);
 }
-
-// ============================================
-// CLEANING
-// ============================================
-let cleanWeekOffset = 0;
 
 function renderCleaning() {
   const week = getWeek() + cleanWeekOffset;
-  const label = cleanWeekOffset===0 ? 'Esta semana' : cleanWeekOffset===1 ? 'Semana próxima' : cleanWeekOffset===-1 ? 'Semana pasada' : `Sem. ${cleanWeekOffset>0?'+':''}${cleanWeekOffset}`;
+  const label = cleanWeekOffset === 0 ? 'Esta semana' : cleanWeekOffset === 1 ? 'Semana próxima' : cleanWeekOffset === -1 ? 'Semana pasada' : `Sem. ${cleanWeekOffset > 0 ? '+' : ''}${cleanWeekOffset}`;
   const active = activeTenants();
   const zones = Object.keys(CLEAN_TASKS);
   const zoneColors = ['var(--color-orange)','var(--color-purple)'];
@@ -1152,9 +1024,7 @@ function renderCleaning() {
   <p style="font-size:0.82rem;color:var(--color-text-muted);font-family:monospace;margin-bottom:1.2rem">Rotación semanal — Cocina y Salón</p>
   <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;align-items:center">
     <button onclick="cleanWeekOffset--;renderCleaning()" style="background:var(--color-card);border:1px solid var(--color-border);color:#aaa;border-radius:8px;padding:0.4rem 0.9rem;cursor:pointer;font-family:monospace">‹</button>
-    <div style="flex:1;text-align:center;font-family:monospace;font-size:0.85rem;color:var(--color-primary);background:var(--color-card);border:1px solid var(--color-border);border-radius:8px;padding:0.4rem">
-      ${label} <span style="color:#444">(sem. ${week})</span>
-    </div>
+    <div style="flex:1;text-align:center;font-family:monospace;font-size:0.85rem;color:var(--color-primary);background:var(--color-card);border:1px solid var(--color-border);border-radius:8px;padding:0.4rem">${label} <span style="color:#444">(sem. ${week})</span></div>
     <button onclick="cleanWeekOffset++;renderCleaning()" style="background:var(--color-card);border:1px solid var(--color-border);color:#aaa;border-radius:8px;padding:0.4rem 0.9rem;cursor:pointer;font-family:monospace">›</button>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;margin-bottom:1.5rem">`;
@@ -1167,69 +1037,33 @@ function renderCleaning() {
     const doneTasks = tasks.filter(t => cleaning[`${zone}-${week}-${t}`]).length;
     const allDone = doneTasks === tasks.length;
 
-    html += `<div class="room-card" style="border:1px solid ${color}44">
-      <div class="room-bar" style="background:${color}"></div>
-      <div class="room-body">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem">
-          <div style="font-size:1.05rem;font-weight:700;color:${color}">${zoneIcons[zi]} ${zone}</div>
-          ${allDone ? badge('✓ Terminado','var(--color-green)') : ''}
-        </div>`;
+    html += `<div class="room-card" style="border:1px solid ${color}44"><div class="room-bar" style="background:${color}"></div><div class="room-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem"><div style="font-size:1.05rem;font-weight:700;color:${color}">${zoneIcons[zi]} ${zone}</div>${allDone ? badge('✓ Terminado','var(--color-green)') : ''}</div>`;
+
     if (assigned) {
       html += `<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.8rem">
-          <div class="tenant-avatar" style="width:28px;height:28px;background:${ar?.color}33;border:1.5px solid ${ar?.color};color:${ar?.color};font-size:0.85rem">${assigned.name[0]}</div>
-          <div>
-            <div style="font-weight:600;font-size:0.9rem">${assigned.name}</div>
-            <div style="font-size:0.72rem;color:var(--color-text-muted);font-family:monospace">${ar?.name}</div>
-          </div>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill" style="background:${color};width:${(doneTasks/tasks.length)*100}%"></div>
-        </div>`;
+        <div class="tenant-avatar" style="width:28px;height:28px;background:${ar?.color}33;border:1.5px solid ${ar?.color};color:${ar?.color};font-size:0.85rem">${assigned.name[0]}</div>
+        <div><div style="font-weight:600;font-size:0.9rem">${assigned.name}</div><div style="font-size:0.72rem;color:var(--color-text-muted);font-family:monospace">${ar?.name || '—'}</div></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="background:${color};width:${(doneTasks/tasks.length)*100}%"></div></div>`;
+
       tasks.forEach(task => {
         const done = cleaning[`${zone}-${week}-${task}`];
-        html += `<div class="task-item" style="background:${done?color+'11':'transparent'}" onclick="toggleTask('${zone}','${week}','${task}')">
-          <div class="task-check" style="border-color:${done?color:'#333'};background:${done?color:'transparent'}">
-            ${done?`<span style="color:#111;font-size:0.65rem;font-weight:900">✓</span>`:''}
-          </div>
-          <span style="font-size:0.82rem;color:${done?color:'#888'};text-decoration:${done?'line-through':'none'}">${task}</span>
+        html += `<div class="task-item" style="background:${done ? color + '11' : 'transparent'}" onclick="toggleTask('${zone}','${week}','${task}')">
+          <div class="task-check" style="border-color:${done ? color : '#333'};background:${done ? color : 'transparent'}">${done ? `<span style="color:#111;font-size:0.65rem;font-weight:900">✓</span>` : ''}</div>
+          <span style="font-size:0.82rem;color:${done ? color : '#888'};text-decoration:${done ? 'line-through' : 'none'}">${task}</span>
         </div>`;
       });
+
       html += `<div style="margin-top:0.7rem;font-size:0.72rem;color:#444;font-family:monospace">${doneTasks}/${tasks.length} tareas completadas</div>`;
     } else {
       html += `<div style="font-size:0.82rem;color:#444;font-style:italic">Sin inquilinos activos</div>`;
     }
+
     html += `</div></div>`;
   });
 
   html += `</div>`;
-
-  // Planning 5 semaines
-  html += `<div class="section-title">PLANIFICACIÓN 5 PRÓXIMAS SEMANAS</div>
-  <div style="overflow-x:auto">
-  <table style="width:100%;border-collapse:collapse;font-size:0.8rem">
-    <thead><tr>
-      <th style="text-align:left;padding:0.5rem 0.8rem;font-family:monospace;color:#444;font-size:0.72rem;border-bottom:1px solid var(--color-border)">SEMAINE</th>
-      ${zones.map((z,i)=>`<th style="text-align:left;padding:0.5rem 0.8rem;font-family:monospace;color:${zoneColors[i]};font-size:0.72rem;border-bottom:1px solid var(--color-border)">${zoneIcons[i]} ${z.toUpperCase()}</th>`).join('')}
-    </tr></thead><tbody>`;
-
-  for(let i=0;i<5;i++) {
-    const w = getWeek() + i;
-    const lbl = i===0?'Esta sem.':i===1?'Próx. sem.':`Sem. +${i}`;
-    html += `<tr style="background:${i===0?'var(--color-card)':'transparent'}">
-      <td style="padding:0.55rem 0.8rem;font-family:monospace;color:${i===0?'var(--color-primary)':'#555'};border-bottom:1px solid #111">${lbl}</td>`;
-    zones.forEach((z,zi) => {
-      const t = active.length ? active[(w+zi)%active.length] : null;
-      const r = t ? roomById(t.room) : null;
-      html += `<td style="padding:0.55rem 0.8rem;border-bottom:1px solid #111">
-        ${t ? `<span style="display:flex;align-items:center;gap:0.4rem">
-          <span style="width:7px;height:7px;border-radius:50%;background:${r?.color};display:inline-block"></span>
-          <span style="color:${i===0?'#fff':'#666'}">${t.name.split(' ')[0]}</span>
-        </span>` : '—'}
-      </td>`;
-    });
-    html += `</tr>`;
-  }
-  html += `</tbody></table></div>`;
   document.getElementById('tab-cleaning').innerHTML = html;
 }
 
@@ -1240,109 +1074,124 @@ async function toggleTask(zone, week, task) {
   renderCleaning();
 }
 
-// ============================================
-// CALENDAR
-// ============================================
 function renderCalendar() {
   let html = `<h1 class="page-title">Calendario Entrées / Sorties</h1>`;
-  const sorted = [...tenants].sort((a,b) => new Date(a.entryDate)-new Date(b.entryDate));
+  const sorted = [...tenants].sort((a,b) => new Date(a.entryDate) - new Date(b.entryDate));
+
   sorted.forEach(t => {
     const r = roomById(t.room);
     const d = daysUntil(t.exitDate);
-    const exitColor = d!==null && d<=30 ? 'var(--color-red)' : d!==null && d<=60 ? 'var(--color-primary)' : 'var(--color-text-muted)';
+    const exitColor = d !== null && d <= 30 ? 'var(--color-red)' : d !== null && d <= 60 ? 'var(--color-primary)' : 'var(--color-text-muted)';
+
     html += `<div class="card" style="display:flex;gap:1rem;align-items:center">
       <div style="width:4px;border-radius:4px;align-self:stretch;background:${r?.color};flex-shrink:0"></div>
       <div style="flex:1">
-        <div style="font-weight:600;margin-bottom:0.3rem">${t.name} <span style="font-weight:400;color:${r?.color};font-size:0.85rem">· ${r?.name}</span></div>
+        <div style="font-weight:600;margin-bottom:0.3rem">${t.name} <span style="font-weight:400;color:${r?.color};font-size:0.85rem">· ${r?.name || '—'}</span></div>
         <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
           <span style="font-size:0.82rem;color:var(--color-green);font-family:monospace">↓ Entrada: ${fmtDate(t.entryDate)}</span>
-          <span style="font-size:0.82rem;color:${exitColor};font-family:monospace">
-            ↑ Sortie: ${fmtDate(t.exitDate)}${d!==null?` (${d>0?`en ${d}j`:d===0?"hoy":'vencido'})`:''}
-          </span>
+          <span style="font-size:0.82rem;color:${exitColor};font-family:monospace">↑ Sortie: ${fmtDate(t.exitDate)}${d !== null ? ` (${d > 0 ? `en ${d}j` : d === 0 ? "hoy" : 'vencido'})` : ''}</span>
         </div>
       </div>
       ${statusBadge(t.status)}
     </div>`;
   });
-  if (!tenants.length) html += `<div style="text-align:center;color:var(--color-text-muted);padding:3rem;font-family:monospace">Aucun locataire enregistré.</div>`;
+
+  if (!tenants.length) {
+    html += `<div style="text-align:center;color:var(--color-text-muted);padding:3rem;font-family:monospace">Aucun locataire enregistré.</div>`;
+  }
+
   document.getElementById('tab-calendar').innerHTML = html;
 }
 
-// ============================================
-// MODALS
-// ============================================
 function openModal(title, bodyHtml) {
   document.getElementById('modal-title').textContent = title;
   document.getElementById('modal-body').innerHTML = bodyHtml;
   document.getElementById('modal').classList.remove('hidden');
 }
+
 function closeModal() {
   document.getElementById('modal').classList.add('hidden');
 }
 
-// ADD / EDIT TENANT
 function openAddTenant(roomId) {
-  openModal('Nuevo inquilino', tenantForm({ id: '', name:'', room: roomId||'r1', phone:'', email:'', entryDate:'', exitDate:'', rent:'', status:'active', notes:'', etatLieux:'' }, false));
+  openModal('Nuevo inquilino', tenantForm({ id:'', name:'', room: roomId || 'r1', phone:'', email:'', entryDate:'', exitDate:'', rent:'', status:'active', notes:'', etatLieux:'' }, false));
 }
+
 function openEditTenant(id) {
-  const t = tenants.find(x => x.id===id);
+  const t = tenants.find(x => x.id === id);
   if (!t) return;
   openModal('Modificar locataire', tenantForm(t, true));
 }
 
 function tenantForm(t, isEdit) {
-  const roomOpts = ROOMS.map(r => `<option value="${r.id}" ${t.room===r.id?'selected':''}>${r.name}</option>`).join('');
-  const statusOpts = [['active','Activo'],['leaving','En salida'],['ended','Terminado']].map(([v,l])=>`<option value="${v}" ${t.status===v?'selected':''}>${l}</option>`).join('');
-  return `
-    <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="f-name" value="${t.name}"></div>
+  const roomOpts = ROOMS.map(r => `<option value="${r.id}" ${t.room === r.id ? 'selected' : ''}>${r.name}</option>`).join('');
+  const statusOpts = [['active','Activo'],['leaving','En salida'],['ended','Terminado']].map(([v,l]) => `<option value="${v}" ${t.status === v ? 'selected' : ''}>${l}</option>`).join('');
+
+  return `<div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="f-name" value="${t.name || ''}"></div>
     <div class="form-group"><label class="form-label">Habitación</label><select class="form-select" id="f-room">${roomOpts}</select></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-phone" value="${t.phone||''}"></div>
-      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" value="${t.email||''}"></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-phone" value="${t.phone || ''}"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" value="${t.email || ''}"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Fecha de entrada</label><input class="form-input" type="date" id="f-entry" value="${t.entryDate||''}"></div>
-      <div class="form-group"><label class="form-label">Fecha de salida</label><input class="form-input" type="date" id="f-exit" value="${t.exitDate||''}"></div>
+      <div class="form-group"><label class="form-label">Fecha de entrada</label><input class="form-input" type="date" id="f-entry" value="${t.entryDate || ''}"></div>
+      <div class="form-group"><label class="form-label">Fecha de salida</label><input class="form-input" type="date" id="f-exit" value="${t.exitDate || ''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Alquiler mensual (€)</label><input class="form-input" type="number" id="f-rent" value="${t.rent||''}"></div>
+    <div class="form-group"><label class="form-label">Alquiler mensual (€)</label><input class="form-input" type="number" id="f-rent" value="${t.rent || ''}"></div>
     <div class="form-group"><label class="form-label">Estado</label><select class="form-select" id="f-status">${statusOpts}</select></div>
-    <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input form-textarea" id="f-notes">${t.notes||''}</textarea></div>
+    <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input form-textarea" id="f-notes">${t.notes || ''}</textarea></div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">
       <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveTenantForm('${t.id}',${isEdit})">${isEdit?'Actualizar':'Guardar'}</button>
+      <button class="btn btn-primary" onclick="saveTenantForm('${t.id}',${isEdit})">${isEdit ? 'Actualizar' : 'Guardar'}</button>
     </div>`;
 }
 
 async function saveTenantForm(oldId, isEdit) {
   const name = document.getElementById('f-name').value.trim();
   if (!name) return alert('Le nom est obligatoire');
+
   const id = isEdit ? oldId : 't_' + Date.now();
   const t = {
-    id, name,
-    room:      document.getElementById('f-room').value,
-    phone:     document.getElementById('f-phone').value,
-    email:     document.getElementById('f-email').value,
+    id,
+    name,
+    room: document.getElementById('f-room').value,
+    phone: document.getElementById('f-phone').value,
+    email: document.getElementById('f-email').value,
     entryDate: document.getElementById('f-entry').value,
-    exitDate:  document.getElementById('f-exit').value,
-    rent:      Number(document.getElementById('f-rent').value),
-    status:    document.getElementById('f-status').value,
-    notes:     document.getElementById('f-notes').value,
+    exitDate: document.getElementById('f-exit').value,
+    rent: Number(document.getElementById('f-rent').value),
+    status: document.getElementById('f-status').value,
+    notes: document.getElementById('f-notes').value,
   };
+
   await saveTenant(t);
+
   if (!isEdit) {
-    const dep = { tenantId: id, advance: t.rent, advanceStatus:'held', advancePaidDate:'', fianza: t.rent, fianzaStatus:'held', fianzaPaidDate:'', notes:'' };
-    await saveDeposit(dep);
+    await saveDeposit({
+      tenantId: id,
+      advance: t.rent,
+      advanceStatus: 'held',
+      advancePaidDate: '',
+      fianza: t.rent,
+      fianzaStatus: 'held',
+      fianzaPaidDate: '',
+      notes: ''
+    });
   }
+
   closeModal();
 }
 
-// PAYMENT MODAL
 function openPayment(tenantId) {
-  const t = tenants.find(x => x.id===tenantId);
-  const statusOpts = [['paid','Pagado'],['late','Atrasado'],['pending','Pendiente']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
-  openModal('Pago', `
-    <div class="form-group"><label class="form-label">Mes (AAAA-MM)</label><input class="form-input" id="p-month" value="${currentMonth()}"></div>
-    <div class="form-group"><label class="form-label">Importe (€)</label><input class="form-input" type="number" id="p-amount" value="${t.rent}"></div>
+  const t = tenants.find(x => x.id === tenantId);
+  if (!t) return;
+
+  const statusOpts = [['paid','Pagado'],['late','Atrasado'],['pending','Pendiente']]
+    .map(([v,l]) => `<option value="${v}">${l}</option>`)
+    .join('');
+
+  openModal('Pago', `<div class="form-group"><label class="form-label">Mes (AAAA-MM)</label><input class="form-input" id="p-month" value="${currentMonth()}"></div>
+    <div class="form-group"><label class="form-label">Importe (€)</label><input class="form-input" type="number" id="p-amount" value="${t.rent || 0}"></div>
     <div class="form-group"><label class="form-label">Estado</label><select class="form-select" id="p-status">${statusOpts}</select></div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">
       <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
@@ -1353,49 +1202,70 @@ function openPayment(tenantId) {
 async function quickPay(tenantId, month) {
   const t = tenants.find(x => x.id === tenantId);
   if (!t) return;
-  const p = {
+
+  await savePayment({
     id: `p_${tenantId}_${month}`,
     tenantId,
     month,
-    amount: t.rent,
+    amount: t.rent || 0,
     status: 'paid',
     date: new Date().toISOString().slice(0,10)
-  };
-  await savePayment(p);
+  });
 }
 
 async function savePaymentForm(tenantId) {
-  const month  = document.getElementById('p-month').value;
+  const month = document.getElementById('p-month').value;
   const amount = Number(document.getElementById('p-amount').value);
   const status = document.getElementById('p-status').value;
-  const p = { id: `p_${tenantId}_${month}`, tenantId, month, amount, status, date: status==='paid' ? new Date().toISOString().slice(0,10) : null };
-  await savePayment(p);
+
+  await savePayment({
+    id: `p_${tenantId}_${month}`,
+    tenantId,
+    month,
+    amount,
+    status,
+    date: status === 'paid' ? new Date().toISOString().slice(0,10) : null
+  });
+
   closeModal();
 }
 
-// DEPOSIT MODAL
 function openDeposit(tenantId) {
-  const t = tenants.find(x => x.id===tenantId);
-  const d = deposits.find(x => x.tenantId===tenantId) || { tenantId, advance:t.rent, advanceStatus:'held', advancePaidDate:'', fianza:t.rent, fianzaStatus:'held', fianzaPaidDate:'', notes:'' };
-  const depOpts = s => [['held','Retenido'],['returned','Devuelto'],['partial','Parcial']].map(([v,l])=>`<option value="${v}" ${s===v?'selected':''}>${l}</option>`).join('');
-  openModal('Fianza & Garantie', `
-    <div style="background:#EEF2F8;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.85rem;color:#1A2B4A;font-family:monospace;border:0.5px solid #B5D4F4">
-      Alquiler de referencia : <span style="color:#1A2B4A;font-weight:700">${t.rent} €</span>
+  const t = tenants.find(x => x.id === tenantId);
+  if (!t) return;
+
+  const d = deposits.find(x => x.tenantId === tenantId) || {
+    tenantId,
+    advance: t.rent || 0,
+    advanceStatus: 'held',
+    advancePaidDate: '',
+    fianza: t.rent || 0,
+    fianzaStatus: 'held',
+    fianzaPaidDate: '',
+    notes: ''
+  };
+
+  const depOpts = s => [['held','Retenido'],['returned','Devuelto'],['partial','Parcial']]
+    .map(([v,l]) => `<option value="${v}" ${s === v ? 'selected' : ''}>${l}</option>`)
+    .join('');
+
+  openModal('Fianza & Garantie', `<div style="background:#EEF2F8;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.85rem;color:#1A2B4A;font-family:monospace;border:0.5px solid #B5D4F4">
+      Alquiler de referencia : <span style="color:#1A2B4A;font-weight:700">${t.rent || 0} €</span>
     </div>
     <div style="color:#1A2B4A;font-size:0.85rem;font-weight:700;margin-bottom:0.8rem">Mes de anticipo</div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Importe (€)</label><input class="form-input" type="number" id="d-adv" value="${d.advance}"></div>
-      <div class="form-group"><label class="form-label">Fecha recibido</label><input class="form-input" type="date" id="d-advdate" value="${d.advancePaidDate||''}"></div>
+      <div class="form-group"><label class="form-label">Importe (€)</label><input class="form-input" type="number" id="d-adv" value="${d.advance || 0}"></div>
+      <div class="form-group"><label class="form-label">Fecha recibido</label><input class="form-input" type="date" id="d-advdate" value="${d.advancePaidDate || ''}"></div>
     </div>
     <div class="form-group"><label class="form-label">Estado avance</label><select class="form-select" id="d-advstatus">${depOpts(d.advanceStatus)}</select></div>
     <div style="border-top:1px solid #B5D4F4;margin:1rem 0"></div>
     <div style="color:#1A2B4A;font-size:0.85rem;font-weight:700;margin-bottom:0.8rem">Fianza</div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Importe (€)</label><input class="form-input" type="number" id="d-fia" value="${d.fianza}"></div>
-      <div class="form-group"><label class="form-label">Fecha recibido</label><input class="form-input" type="date" id="d-fiadate" value="${d.fianzaPaidDate||''}"></div>
+      <div class="form-group"><label class="form-label">Importe (€)</label><input class="form-input" type="number" id="d-fia" value="${d.fianza || 0}"></div>
+      <div class="form-group"><label class="form-label">Fecha recibido</label><input class="form-input" type="date" id="d-fiadate" value="${d.fianzaPaidDate || ''}"></div>
     </div>
     <div class="form-group"><label class="form-label">Estado caution</label><select class="form-select" id="d-fiastatus">${depOpts(d.fianzaStatus)}</select></div>
-    <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input form-textarea" id="d-notes">${d.notes||''}</textarea></div>
+    <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input form-textarea" id="d-notes">${d.notes || ''}</textarea></div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">
       <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
       <button class="btn" style="background:#1A2B4A;color:#fff;border-color:#1A2B4A;border-radius:20px" onclick="saveDepositForm('${tenantId}')">Guardar</button>
@@ -1403,77 +1273,65 @@ function openDeposit(tenantId) {
 }
 
 async function saveDepositForm(tenantId) {
-  const dep = {
+  await saveDeposit({
     tenantId,
-    advance:         Number(document.getElementById('d-adv').value),
+    advance: Number(document.getElementById('d-adv').value),
     advancePaidDate: document.getElementById('d-advdate').value,
-    advanceStatus:   document.getElementById('d-advstatus').value,
-    fianza:          Number(document.getElementById('d-fia').value),
-    fianzaPaidDate:  document.getElementById('d-fiadate').value,
-    fianzaStatus:    document.getElementById('d-fiastatus').value,
-    notes:           document.getElementById('d-notes').value,
-  };
-  await saveDeposit(dep);
+    advanceStatus: document.getElementById('d-advstatus').value,
+    fianza: Number(document.getElementById('d-fia').value),
+    fianzaPaidDate: document.getElementById('d-fiadate').value,
+    fianzaStatus: document.getElementById('d-fiastatus').value,
+    notes: document.getElementById('d-notes').value,
+  });
+
   closeModal();
 }
 
-// ETAT DES LIEUX
 function openEtatLieux(tenantId) {
-  const t = tenants.find(x => x.id===tenantId);
-  openModal('Estado de la vivienda', `
-    <div style="background:#EEF2F8;border-radius:10px;padding:1.2rem;margin-bottom:1rem;border:0.5px solid #B5D4F4">
+  const t = tenants.find(x => x.id === tenantId);
+  if (!t) return;
+
+  openModal('Estado de la vivienda', `<div style="background:#EEF2F8;border-radius:10px;padding:1.2rem;margin-bottom:1rem;border:0.5px solid #B5D4F4">
       <div style="font-size:0.75rem;font-family:monospace;color:#5B7FA6;margin-bottom:0.5rem;letter-spacing:0.08em">NOTAS DE ESTADO</div>
-      <div style="color:#1A2B4A;line-height:1.6;font-size:0.9rem">${t.etatLieux||'Sin notas registradas.'}</div>
+      <div style="color:#1A2B4A;line-height:1.6;font-size:0.9rem">${t.etatLieux || 'Sin notas registradas.'}</div>
     </div>
     <div style="font-size:0.78rem;color:#5B7FA6;font-family:monospace">Entrada: ${fmtDate(t.entryDate)} · Salida prevista: ${fmtDate(t.exitDate)}</div>
-    <div style="display:flex;justify-content:flex-end;margin-top:1rem">
-      <button class="btn btn-outline-y" onclick="closeModal()">Cerrar</button>
-    </div>`);
+    <div style="display:flex;justify-content:flex-end;margin-top:1rem"><button class="btn btn-outline-y" onclick="closeModal()">Cerrar</button></div>`);
 }
 
-// WHATSAPP REMINDER
 function openWhatsApp(tenantId) {
-  const t = tenants.find(x => x.id===tenantId);
+  const t = tenants.find(x => x.id === tenantId);
   if (!t) return;
-  const mon = new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
 
-  // ============================================
-  // INFOS BANCAIRES - Modifie ici !
-  // ============================================
+  const mon = new Date().toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
   const bankInfo = {
-    nom:    'Ton Nom Complet',    // ← Change ici
-    banque: 'Nom de ta banque',   // ← Change ici
-    iban:   'ES00 0000 0000 0000' // ← Change ici
+    nom: 'Ton Nom Complet',
+    banque: 'Nom de ta banque',
+    iban: 'ES00 0000 0000 0000'
   };
 
-  const msg = encodeURIComponent(
-    `Bonjour ${t.name} 👋\n\nTon loyer de ${t.rent}€ est dû pour ${mon}.\n\nVirement bancaire :\nNom : ${bankInfo.nom}\nBanque : ${bankInfo.banque}\nIBAN : ${bankInfo.iban}\nMontant : ${t.rent} €\nRéférence : Loyer ${mon} - ${ROOMS.find(r=>r.id===t.room)?.name}\n\nMerci ! 🏠`
-  );
+  const roomName = ROOMS.find(r => r.id === t.room)?.name || '';
+  const msg = encodeURIComponent(`Bonjour ${t.name} 👋\n\nTon loyer de ${t.rent}€ est dû pour ${mon}.\n\nVirement bancaire :\nNom : ${bankInfo.nom}\nBanque : ${bankInfo.banque}\nIBAN : ${bankInfo.iban}\nMontant : ${t.rent} €\nRéférence : Loyer ${mon} - ${roomName}\n\nMerci ! 🏠`);
 
-  openModal('Recordatorio alquiler', `
-    <div style="background:#EEF2F8;border-radius:10px;padding:1.2rem;margin-bottom:1rem;font-size:0.85rem;color:#1A2B4A;line-height:1.8;white-space:pre-wrap;border:0.5px solid #B5D4F4">Bonjour ${t.name} 👋\n\nTon loyer de ${t.rent}€ est dû pour ${mon}.\n\nVirement bancaire :\nNom : ${bankInfo.nom}\nBanque : ${bankInfo.banque}\nIBAN : ${bankInfo.iban}\nMontant : ${t.rent} €\nRéférence : Loyer ${mon} - ${ROOMS.find(r=>r.id===t.room)?.name}</div>
+  openModal('Recordatorio alquiler', `<div style="background:#EEF2F8;border-radius:10px;padding:1.2rem;margin-bottom:1rem;font-size:0.85rem;color:#1A2B4A;line-height:1.8;white-space:pre-wrap;border:0.5px solid #B5D4F4">Bonjour ${t.name} 👋\n\nTon loyer de ${t.rent}€ est dû pour ${mon}.\n\nVirement bancaire :\nNom : ${bankInfo.nom}\nBanque : ${bankInfo.banque}\nIBAN : ${bankInfo.iban}\nMontant : ${t.rent} €\nRéférence : Loyer ${mon} - ${roomName}</div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end">
       <button class="btn btn-outline-y" onclick="closeModal()">Cerrar</button>
-      <a href="https://wa.me/${t.phone?.replace(/\D/g,'')}?text=${msg}" target="_blank">
-        <button class="whatsapp-btn">📱 Enviar WhatsApp</button>
-      </a>
+      <a href="https://wa.me/${t.phone?.replace(/\D/g,'')}?text=${msg}" target="_blank"><button class="whatsapp-btn">📱 Enviar WhatsApp</button></a>
     </div>`);
 }
 
-// ============================================
-// DOCUMENTOS
-// ============================================
 async function uploadDoc(tenantId, input) {
   const file = input.files[0];
   if (!file) return;
 
   if (file.size > 1.5 * 1024 * 1024) {
-    alert('Fichier trop grand ! Maximum 1.5 MB par document.');
+    alert('Fichier trop grand ! Maximum 1.5 MB.');
     input.value = '';
     return;
   }
 
   const reader = new FileReader();
+
   reader.onload = async (e) => {
     const existing = documents[tenantId] || [];
     const newDoc = {
@@ -1484,20 +1342,23 @@ async function uploadDoc(tenantId, input) {
       date: new Date().toLocaleDateString('fr-FR'),
       data: e.target.result
     };
+
     const updated = [...existing, newDoc];
     documents[tenantId] = updated;
     await saveDocuments(tenantId, updated);
     renderTenants();
   };
+
   reader.readAsDataURL(file);
   input.value = '';
 }
 
 function viewDoc(tenantId, docId) {
-  const docs = documents[tenantId] || [];
-  const doc = docs.find(d => d.id === docId);
+  const doc = (documents[tenantId] || []).find(d => d.id === docId);
   if (!doc) return;
+
   const win = window.open('');
+
   if (doc.type && doc.type.startsWith('image/')) {
     win.document.write(`<html><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="${doc.data}" style="max-width:100%;max-height:100vh"></body></html>`);
   } else {
@@ -1506,83 +1367,82 @@ function viewDoc(tenantId, docId) {
 }
 
 function downloadDoc(tenantId, docId) {
-  const docs = documents[tenantId] || [];
-  const doc = docs.find(d => d.id === docId);
+  const doc = (documents[tenantId] || []).find(d => d.id === docId);
   if (!doc) return;
+
   const a = document.createElement('a');
   a.href = doc.data;
   a.download = doc.name;
   a.click();
 }
 
-// ============================================
-// DOCUMENTOS
-// ============================================
-async function uploadDoc(tenantId, input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 1.5 * 1024 * 1024) {
-    alert('Fichier trop grand ! Maximum 1.5 MB.');
-    input.value = ''; return;
-  }
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const existing = documents[tenantId] || [];
-    const newDoc = { id: 'd_' + Date.now(), name: file.name, type: file.type, size: file.size, date: new Date().toLocaleDateString('fr-FR'), data: e.target.result };
-    const updated = [...existing, newDoc];
-    documents[tenantId] = updated;
-    await saveDocuments(tenantId, updated);
-    renderTenants();
-  };
-  reader.readAsDataURL(file);
-  input.value = '';
-}
-
-function viewDoc(tenantId, docId) {
-  const doc = (documents[tenantId]||[]).find(d => d.id===docId);
-  if (!doc) return;
-  const win = window.open('');
-  if (doc.type && doc.type.startsWith('image/')) {
-    win.document.write(`<html><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="${doc.data}" style="max-width:100%;max-height:100vh"></body></html>`);
-  } else {
-    win.document.write(`<html><body style="margin:0"><embed src="${doc.data}" width="100%" height="100%" style="position:fixed;inset:0"></body></html>`);
-  }
-}
-
-function downloadDoc(tenantId, docId) {
-  const doc = (documents[tenantId]||[]).find(d => d.id===docId);
-  if (!doc) return;
-  const a = document.createElement('a');
-  a.href = doc.data; a.download = doc.name; a.click();
-}
-
 async function deleteDoc(tenantId, docId) {
   if (!confirm('Eliminar ce document ?')) return;
-  const docs = (documents[tenantId]||[]).filter(d => d.id!==docId);
+
+  const docs = (documents[tenantId] || []).filter(d => d.id !== docId);
   documents[tenantId] = docs;
   await saveDocuments(tenantId, docs);
   renderTenants();
 }
 
-// DELETE CONFIRM
 function confirmDelete(id) {
-  const t = tenants.find(x => x.id===id);
-  openModal('Eliminar', `
-    <p style="color:#1A2B4A;margin-bottom:1.5rem;font-family:'Segoe UI',system-ui,sans-serif;font-size:0.9rem;line-height:1.6">Eliminar <strong>${t?.name}</strong> ? Esta acción es irreversible.</p>
+  const t = tenants.find(x => x.id === id);
+
+  openModal('Eliminar', `<p style="color:#1A2B4A;margin-bottom:1.5rem;font-family:'Segoe UI',system-ui,sans-serif;font-size:0.9rem;line-height:1.6">Eliminar <strong>${t?.name || ''}</strong> ? Esta acción es irreversible.</p>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end">
       <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
-      <button class="btn" style="background:var(--color-red);color:#fff;border-color:var(--color-red)" onclick="deleteTenant('${id}');closeModal()">Eliminar</button>
+      <button class="btn" style="background:var(--color-red);color:#fff;border-color:var(--color-red)" onclick="deleteTenant('${id}')">Eliminar</button>
     </div>`);
 }
 
-// ============================================
-// INIT
-// ============================================
+async function generateMonthlyPayments() {
+  const mon = currentMonth();
+
+  for (const t of activeTenants()) {
+    const exists = payments.some(p => p.tenantId === t.id && p.month === mon);
+    if (exists) continue;
+
+    await savePayment({
+      id: `p_${t.id}_${mon}`,
+      tenantId: t.id,
+      month: mon,
+      amount: t.rent || 0,
+      status: 'pending',
+      date: null
+    });
+  }
+}
+
+async function checkLatePayments() {
+  const today = new Date();
+  const day = today.getDate();
+  const mon = currentMonth();
+
+  if (day <= 5) return;
+
+  const validTenantIds = activeTenants().map(t => t.id);
+
+  for (const p of payments) {
+    if (
+      p.month === mon &&
+      p.status === 'pending' &&
+      validTenantIds.includes(p.tenantId)
+    ) {
+      await savePayment({
+        ...p,
+        status: 'late'
+      });
+    }
+  }
+}
+
 window.addEventListener('firebase-ready', () => {
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
+
   renderDashboard();
   updateFreeBadges();
+
   loadData(async () => {
     await generateMonthlyPayments();
     await checkLatePayments();
@@ -1590,5 +1450,4 @@ window.addEventListener('firebase-ready', () => {
   });
 });
 </script>
-</body>
 </html>

@@ -109,12 +109,18 @@
         <rect x="19" y="30" width="6" height="8" fill="#C9A96E" rx="1"/>
       </svg>
       <div class="header-text-wrapper">
-        <div class="header-title">MayNest</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="header-title">MayNest</div>
+          <button onclick="openSettings()" style="background:transparent;border:none;cursor:pointer;padding:2px;line-height:1" aria-label="Paramètres">
+            <i class="ti ti-settings" style="font-size:14px;color:rgba(255,255,255,0.6)"></i>
+          </button>
+        </div>
         <div class="header-sub">GESTIÓN DE ALQUILER · 5 HABITACIONES</div>
       </div>
     </div>
-    <div class="free-badges" id="free-badges"></div>
-    <button onclick="openSettings()" style="background:rgba(255,255,255,0.1);color:#FAF6F1;border:none;border-radius:8px;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0">⚙️</button>
+    <div style="display:flex;align-items:center;flex-shrink:0">
+      <div class="free-badges" id="free-badges"></div>
+    </div>
   </div>
   <div class="nav">
     <button class="nav-btn active" onclick="showTab('dashboard')" id="nav-dashboard">⌂ Panel principal</button>
@@ -186,61 +192,136 @@ let currentLang = localStorage.getItem('maynest-lang') || 'es';
 
 const TRANSLATIONS = {
   es: {
-    dashboard: '⌂ Panel principal', rooms: '⊞ Habitaciones', tenants: '◎ Inquilinos',
-    payments: '◈ Pagos', deposits: '⬡ Garantías', facturas: '⚡ Facturas',
-    cleaning: '✦ Limpieza', calendar: '◷ Calendario',
-    addTenant: '+ Añadir', editTenant: 'Modificar inquilino', newTenant: 'Nuevo inquilino',
-    save: 'Guardar', cancel: 'Cancelar', update: 'Actualizar', delete: 'Eliminar',
-    archive: 'Archivar', name: 'Nombre completo', room: 'Habitación',
-    phone: 'Teléfono', email: 'Email', entryDate: 'Fecha de entrada',
-    exitDate: 'Fecha de salida', rent: 'Alquiler mensual (€)', status: 'Estado',
-    notes: 'Notas', active: 'Activo', leaving: 'En salida', ended: 'Terminado',
-    paid: 'Pagado', late: 'Atrasado', pending: 'Pendiente',
-    income: 'Ingresos mensuales', collected: 'Cobrado este mes',
-    occupied: 'Habitaciones ocupadas', delayed: 'Pagos atrasados',
-    location: 'LOCALIZACIÓN', alerts: 'ALERTAS', free: 'libre',
-    totalCobrado: 'Total cobrado', newFactura: '+ Nueva factura',
-    electricity: 'Electricidad', water: 'Agua', perPerson: 'PARTE POR PERSONA',
-    archiveInfo: 'El inquilino será archivado, no eliminado. Todos sus datos quedan guardados.',
-    settings: 'Configuración', language: 'IDIOMA / LANGUAGE / LANGUE',
+    dashboard:'⌂ Panel principal', rooms:'⊞ Habitaciones', tenants:'◎ Inquilinos',
+    payments:'◈ Pagos', deposits:'⬡ Garantías', facturas:'⚡ Facturas',
+    cleaning:'✦ Limpieza', calendar:'◷ Calendario',
+    addTenant:'+ Añadir', editTenant:'Modificar inquilino', newTenant:'Nuevo inquilino',
+    save:'Guardar', cancel:'Cancelar', update:'Actualizar',
+    archive:'Archivar', archiveTitle:'Archivar inquilino',
+    archiveMsg:'El inquilino será archivado, no eliminado. Todos sus datos (pagos, garantías, documentos) quedan guardados.',
+    name:'Nombre completo', room:'Habitación', phone:'Teléfono', email:'Email',
+    entryDate:'Fecha de entrada', exitDate:'Fecha de salida', rent:'Alquiler mensual (€)',
+    status:'Estado', notes:'Notas',
+    active:'Activo', leaving:'En salida', ended:'Terminado', archived:'Archivado',
+    paid:'Pagado', late:'Atrasado', pending:'Pendiente',
+    held:'Retenido', returned:'Devuelto', partial:'Parcial',
+    income:'Ingresos mensuales', collected:'Cobrado este mes',
+    occupied:'Habitaciones ocupadas', delayed:'Pagos atrasados',
+    location:'LOCALIZACIÓN', alerts:'ALERTAS', myApartment:'Mi apartamento',
+    openMaps:'Abrir Maps', totalCobrado:'Total cobrado',
+    newFactura:'+ Nueva factura', electricity:'Electricidad', water:'Agua',
+    perPerson:'PARTE POR PERSONA', tenantDetail:'DETALLE POR INQUILINO',
+    documents:'DOCUMENTOS', noDocuments:'Sin documentos', addDoc:'+ Añadir',
+    noTenants:'Sin inquilinos. Clique + Añadir !',
+    pago:'Pago', fianza:'Fianza', estadoVivienda:'Estado vivienda', whatsapp:'WhatsApp', eliminar:'Eliminar',
+    settings:'Configuración', language:'IDIOMA / LANGUAGE / LANGUE',
+    modify:'Modificar', pdf:'PDF', complete:'Completo', totalGarantias:'TOTAL GARANTÍAS',
+    mesAnticipo:'MES ANTICIPO', anticipos:'ANTICIPOS', fianzas:'FIANZAS', total:'TOTAL',
+    detailInquilino:'DETALLE POR INQUILINO',
+    paymentTitle:'Pago', month:'Mes (AAAA-MM)', amount:'Importe (€)',
+    depositTitle:'Fianza & Garantía', refRent:'Alquiler de referencia',
+    advanceStatus:'Estado avance', depositStatus:'Estado caución',
+    estadoTitle:'Estado de la vivienda', statusNotes:'NOTAS DE ESTADO',
+    noNotes:'Sin notas registradas.', entry:'Entrada', exitPrev:'${t("exitAlert")}',
+    close:'Cerrar', send:'Enviar WhatsApp',
+    facturaType:'Tipo', facturaMonth:'Mes (AAAA-MM)', facturaAmount:'Importe total (€)',
+    deleteFacturaTitle:'Eliminar factura', noFacturas:'Sin facturas. Clique + Nueva factura !',
+    deleteConfirm:'¿Eliminar factura', irreversible:'Esta acción es irreversible.',
+    cleanTitle:'Calendario de Limpieza', cleanSubtitle:'Rotación semanal — Cocina y Salón',
+    thisWeek:'Esta semana', nextWeek:'Semana próxima', lastWeek:'Semana pasada',
+    noActiveTenants:'Sin inquilinos activos', tasksCompleted:'tareas completadas',
+    planning:'PLANIFICACIÓN 5 PRÓXIMAS SEMANAS', thisSem:'Esta sem.', nextSem:'Próx. sem.',
+    calTitle:t('calTitle'), noTenantsReg:'Sin inquilinos registrados.',
+    inEntry:'Entrada', inExit:'Salida', today:'hoy', expired:'vencido', inDays:'en',
+    lateAlert:'${t("lateAlert")}', exitAlert:'${t("exitAlert")}',
   },
   en: {
-    dashboard: '⌂ Dashboard', rooms: '⊞ Rooms', tenants: '◎ Tenants',
-    payments: '◈ Payments', deposits: '⬡ Guarantees', facturas: '⚡ Bills',
-    cleaning: '✦ Cleaning', calendar: '◷ Calendar',
-    addTenant: '+ Add', editTenant: 'Edit tenant', newTenant: 'New tenant',
-    save: 'Save', cancel: 'Cancel', update: 'Update', delete: 'Delete',
-    archive: 'Archive', name: 'Full name', room: 'Room',
-    phone: 'Phone', email: 'Email', entryDate: 'Entry date',
-    exitDate: 'Exit date', rent: 'Monthly rent (€)', status: 'Status',
-    notes: 'Notes', active: 'Active', leaving: 'Leaving', ended: 'Ended',
-    paid: 'Paid', late: 'Late', pending: 'Pending',
-    income: 'Monthly income', collected: 'Collected this month',
-    occupied: 'Occupied rooms', delayed: 'Late payments',
-    location: 'LOCATION', alerts: 'ALERTS', free: 'free',
-    totalCobrado: 'Total collected', newFactura: '+ New bill',
-    electricity: 'Electricity', water: 'Water', perPerson: 'PER PERSON',
-    archiveInfo: 'The tenant will be archived, not deleted. All data is kept.',
-    settings: 'Settings', language: 'IDIOMA / LANGUAGE / LANGUE',
+    dashboard:'⌂ Dashboard', rooms:'⊞ Rooms', tenants:'◎ Tenants',
+    payments:'◈ Payments', deposits:'⬡ Guarantees', facturas:'⚡ Bills',
+    cleaning:'✦ Cleaning', calendar:'◷ Calendar',
+    addTenant:'+ Add', editTenant:'Edit tenant', newTenant:'New tenant',
+    save:'Save', cancel:'Cancel', update:'Update',
+    archive:'Archive', archiveTitle:'Archive tenant',
+    archiveMsg:'The tenant will be archived, not deleted. All data (payments, guarantees, documents) is kept.',
+    name:'Full name', room:'Room', phone:'Phone', email:'Email',
+    entryDate:'Entry date', exitDate:'Exit date', rent:'Monthly rent (€)',
+    status:'Status', notes:'Notes',
+    active:'Active', leaving:'Leaving', ended:'Ended', archived:'Archived',
+    paid:'Paid', late:'Late', pending:'Pending',
+    held:'Held', returned:'Returned', partial:'Partial',
+    income:'Monthly income', collected:'Collected this month',
+    occupied:'Occupied rooms', delayed:'Late payments',
+    location:'LOCATION', alerts:'ALERTS', myApartment:'My apartment',
+    openMaps:'Open Maps', totalCobrado:'Total collected',
+    newFactura:'+ New bill', electricity:'Electricity', water:'Water',
+    perPerson:'PER PERSON', tenantDetail:'DETAIL PER TENANT',
+    documents:'DOCUMENTS', noDocuments:'No documents', addDoc:'+ Add',
+    noTenants:'No tenants. Click + Add !',
+    pago:'Payment', fianza:'Deposit', estadoVivienda:'Property status', whatsapp:'WhatsApp', eliminar:'Archive',
+    settings:'Settings', language:'IDIOMA / LANGUAGE / LANGUE',
+    modify:'Edit', pdf:'PDF', complete:'Complete', totalGarantias:'TOTAL GUARANTEES',
+    mesAnticipo:'ADVANCE', anticipos:'ADVANCES', fianzas:'DEPOSITS', total:'TOTAL',
+    detailInquilino:'DETAIL PER TENANT',
+    paymentTitle:'Payment', month:'Month (YYYY-MM)', amount:'Amount (€)',
+    depositTitle:'Deposit & Guarantee', refRent:'Reference rent',
+    advanceStatus:'Advance status', depositStatus:'Deposit status',
+    estadoTitle:'Property status', statusNotes:'STATUS NOTES',
+    noNotes:'No notes recorded.', entry:'Entry', exitPrev:'Expected exit',
+    close:'Close', send:'Send WhatsApp',
+    facturaType:'Type', facturaMonth:'Month (YYYY-MM)', facturaAmount:'Total amount (€)',
+    deleteFacturaTitle:'Delete bill', noFacturas:'No bills. Click + New bill !',
+    deleteConfirm:'Delete bill', irreversible:'This action is irreversible.',
+    cleanTitle:'Cleaning Calendar', cleanSubtitle:'Weekly rotation — Kitchen & Living room',
+    thisWeek:'This week', nextWeek:'Next week', lastWeek:'Last week',
+    noActiveTenants:'No active tenants', tasksCompleted:'tasks completed',
+    planning:'PLANNING NEXT 5 WEEKS', thisSem:'This wk.', nextSem:'Next wk.',
+    calTitle:'Entry / Exit Calendar', noTenantsReg:'No tenants registered.',
+    inEntry:'Entry', inExit:'Exit', today:'today', expired:'expired', inDays:'in',
+    lateAlert:'Late payment', exitAlert:'Exit planned',
   },
   fr: {
-    dashboard: '⌂ Tableau de bord', rooms: '⊞ Chambres', tenants: '◎ Locataires',
-    payments: '◈ Paiements', deposits: '⬡ Garanties', facturas: '⚡ Factures',
-    cleaning: '✦ Nettoyage', calendar: '◷ Calendrier',
-    addTenant: '+ Ajouter', editTenant: 'Modifier locataire', newTenant: 'Nouveau locataire',
-    save: 'Enregistrer', cancel: 'Annuler', update: 'Mettre à jour', delete: 'Supprimer',
-    archive: 'Archiver', name: 'Nom complet', room: 'Chambre',
-    phone: 'Téléphone', email: 'Email', entryDate: 'Date d\'entrée',
-    exitDate: 'Date de sortie', rent: 'Loyer mensuel (€)', status: 'Statut',
-    notes: 'Notes', active: 'Actif', leaving: 'En départ', ended: 'Terminé',
-    paid: 'Payé', late: 'En retard', pending: 'En attente',
-    income: 'Revenus mensuels', collected: 'Encaissé ce mois',
-    occupied: 'Chambres occupées', delayed: 'Retards de paiement',
-    location: 'LOCALISATION', alerts: 'ALERTES', free: 'libre',
-    totalCobrado: 'Total encaissé', newFactura: '+ Nouvelle facture',
-    electricity: 'Électricité', water: 'Eau', perPerson: 'PART PAR PERSONNE',
-    archiveInfo: 'Le locataire sera archivé, pas supprimé. Toutes ses données sont conservées.',
-    settings: 'Paramètres', language: 'IDIOMA / LANGUAGE / LANGUE',
+    dashboard:'⌂ Tableau de bord', rooms:'⊞ Chambres', tenants:'◎ Locataires',
+    payments:'◈ Paiements', deposits:'⬡ Garanties', facturas:'⚡ Factures',
+    cleaning:'✦ Nettoyage', calendar:'◷ Calendrier',
+    addTenant:'+ Ajouter', editTenant:'Modifier locataire', newTenant:'Nouveau locataire',
+    save:'Enregistrer', cancel:'Annuler', update:'Mettre à jour',
+    archive:'Archiver', archiveTitle:'Archiver locataire',
+    archiveMsg:'Le locataire sera archivé, pas supprimé. Toutes ses données (paiements, garanties, documents) sont conservées.',
+    name:'Nom complet', room:'Chambre', phone:'Téléphone', email:'Email',
+    entryDate:'Date d\'entrée', exitDate:'Date de sortie', rent:'Loyer mensuel (€)',
+    status:'Statut', notes:'Notes',
+    active:'Actif', leaving:'En départ', ended:'Terminé', archived:'Archivé',
+    paid:'Payé', late:'En retard', pending:'En attente',
+    held:'Retenu', returned:'Rendu', partial:'Partiel',
+    income:'Revenus mensuels', collected:'Encaissé ce mois',
+    occupied:'Chambres occupées', delayed:'Retards de paiement',
+    location:'LOCALISATION', alerts:'ALERTES', myApartment:'Mon appartement',
+    openMaps:'Ouvrir Maps', totalCobrado:'Total encaissé',
+    newFactura:'+ Nouvelle facture', electricity:'Électricité', water:'Eau',
+    perPerson:'PART PAR PERSONNE', tenantDetail:'DÉTAIL PAR LOCATAIRE',
+    documents:'DOCUMENTS', noDocuments:'Aucun document', addDoc:'+ Ajouter',
+    noTenants:'Aucun locataire. Clique + Ajouter !',
+    pago:'Paiement', fianza:'Caution', estadoVivienda:'État des lieux', whatsapp:'WhatsApp', eliminar:'Archiver',
+    settings:'Paramètres', language:'IDIOMA / LANGUAGE / LANGUE',
+    modify:'Modifier', pdf:'PDF', complete:'Complet', totalGarantias:'TOTAL GARANTIES',
+    mesAnticipo:'MOIS D\'AVANCE', anticipos:'AVANCES', fianzas:'CAUTIONS', total:'TOTAL',
+    detailInquilino:'DÉTAIL PAR LOCATAIRE',
+    paymentTitle:'Paiement', month:'Mois (AAAA-MM)', amount:'Montant (€)',
+    depositTitle:'Caution & Garantie', refRent:'Loyer de référence',
+    advanceStatus:'Statut avance', depositStatus:'Statut caution',
+    estadoTitle:'État des lieux', statusNotes:'NOTES D\'ÉTAT',
+    noNotes:'Aucune note enregistrée.', entry:'Entrée', exitPrev:'Sortie prévue',
+    close:'Fermer', send:'Envoyer WhatsApp',
+    facturaType:'Type', facturaMonth:'Mois (AAAA-MM)', facturaAmount:'Montant total (€)',
+    deleteFacturaTitle:'Supprimer facture', noFacturas:'Aucune facture. Clique + Nouvelle facture !',
+    deleteConfirm:'Supprimer facture', irreversible:'Cette action est irréversible.',
+    cleanTitle:'Calendrier de Nettoyage', cleanSubtitle:'Rotation hebdomadaire — Cuisine & Salon',
+    thisWeek:'Cette semaine', nextWeek:'Semaine prochaine', lastWeek:'Semaine dernière',
+    noActiveTenants:'Aucun locataire actif', tasksCompleted:'tâches complétées',
+    planning:'PLANNING 5 PROCHAINES SEMAINES', thisSem:'Cette sem.', nextSem:'Sem. suiv.',
+    calTitle:'Calendrier Entrées / Sorties', noTenantsReg:'Aucun locataire enregistré.',
+    inEntry:'Entrée', inExit:'Sortie', today:'aujourd\'hui', expired:'dépassé', inDays:'dans',
+    lateAlert:'Paiement en retard', exitAlert:'Sortie prévue',
   }
 };
 
@@ -249,11 +330,18 @@ function t(key) { return TRANSLATIONS[currentLang]?.[key] || TRANSLATIONS['es'][
 function setLang(lang) {
   currentLang = lang;
   localStorage.setItem('maynest-lang', lang);
+  // Update header subtitle
+  document.querySelector('.header-sub').textContent =
+    lang === 'fr' ? 'GESTION LOCATIVE · 5 CHAMBRES' :
+    lang === 'en' ? 'RENTAL MANAGEMENT · 5 ROOMS' :
+    'GESTIÓN DE ALQUILER · 5 HABITACIONES';
   // Update nav buttons
   const tabs = ['dashboard','rooms','tenants','payments','deposits','facturas','cleaning','calendar'];
   document.querySelectorAll('.nav-btn').forEach((b,i) => { b.textContent = t(tabs[i]); });
   closeModal();
+  // Re-render current tab
   renderTab(currentTab);
+  updateFreeBadges();
 }
 
 function openSettings() {
@@ -303,18 +391,18 @@ function currentMonth() { return new Date().toISOString().slice(0,7); }
 function activeTenants() { return tenants.filter(t => t.status !== 'ended' && t.status !== 'archived'); }
 function badge(label, color) { return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${label}</span>`; }
 function statusBadge(s) {
-  const map = { active: ['Activo','#2E7D8C'], leaving: ['En salida','#D4A843'], ended: ['Terminado','#5B7FA6'] };
-  const item = map[s] || ['Desconocido','#5B7FA6'];
+  const map = { active:[t('active'),'#2E7D8C'], leaving:[t('leaving'),'#D4A843'], ended:[t('ended'),'#5B7FA6'], archived:[t('archived')||'Archived','#8a9ab5'] };
+  const item = map[s]||[s,'#5B7FA6'];
   return badge(item[0], item[1]);
 }
 function payBadge(s) {
-  const map = { paid: ['Pagado','#2E7D8C'], late: ['Atrasado','#7D2340'], pending: ['Pendiente','#D4A843'] };
-  const item = map[s] || ['Pendiente','#D4A843'];
+  const map = { paid:[t('paid'),'#2E7D8C'], late:[t('late'),'#7D2340'], pending:[t('pending'),'#D4A843'] };
+  const item = map[s]||[t('pending'),'#D4A843'];
   return badge(item[0], item[1]);
 }
 function depBadge(s) {
-  const map = { held: ['Retenido','#1A2B4A'], returned: ['Devuelto','#2E7D8C'], partial: ['Parcial','#D4A843'] };
-  const item = map[s] || ['Retenido','#1A2B4A'];
+  const map = { held:[t('held'),'#1A2B4A'], returned:[t('returned'),'#2E7D8C'], partial:[t('partial'),'#D4A843'] };
+  const item = map[s]||[t('held'),'#1A2B4A'];
   return badge(item[0], item[1]);
 }
 function getDb() { return window.db; }
@@ -397,40 +485,40 @@ function renderDashboard() {
     <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #1A2B4A">
       <i class="ti ti-chart-bar" style="font-size:20px;color:#1A2B4A"></i>
       <div class="kpi-value" style="color:#1A2B4A">${totalRev} €</div>
-      <div class="kpi-label">Ingresos mensuales</div>
+      <div class="kpi-label">${t("income")}</div>
     </div>
     <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #2E7D8C">
       <i class="ti ti-cash" style="font-size:20px;color:#2E7D8C"></i>
       <div class="kpi-value" style="color:#2E7D8C">${paidAmt} €</div>
-      <div class="kpi-label">Cobrado este mes</div>
+      <div class="kpi-label">${t("collected")}</div>
     </div>
     <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #D4A843">
       <i class="ti ti-door" style="font-size:20px;color:#D4A843"></i>
       <div class="kpi-value" style="color:#9A7520">${active.length} / 5</div>
-      <div class="kpi-label">Habitaciones ocupadas</div>
+      <div class="kpi-label">${t("occupied")}</div>
     </div>
     <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #7D2340">
       <i class="ti ti-clock-exclamation" style="font-size:20px;color:#7D2340"></i>
       <div class="kpi-value" style="color:#7D2340">${late.length}</div>
-      <div class="kpi-label">Pagos atrasados</div>
+      <div class="kpi-label">${t("delayed")}</div>
     </div>
   </div>`;
 
   if (late.length > 0 || exits.length > 0) {
-    html += `<div class="section-title">ALERTAS</div>`;
+    html += `<div class="section-title">${t("alerts")}</div>`;
     late.forEach(p => {
       const t = tenants.find(x => x.id===p.tenantId);
       if (!t) return;
       const r = roomById(t.room);
       html += `<div class="alert" style="background:var(--color-red)11;border:1px solid var(--color-red)44">
-        <span style="color:var(--color-red);font-size:0.88rem">⚠ Pago atrasado — <strong>${t.name}</strong> · ${r?.name||''}</span>
+        <span style="color:var(--color-red);font-size:0.88rem">⚠ ${t("lateAlert")} — <strong>${t.name}</strong> · ${r?.name||''}</span>
         <span style="color:var(--color-red);font-family:monospace;font-size:0.82rem">${p.amount||0} €</span>
       </div>`;
     });
     exits.forEach(t => {
       const d = daysUntil(t.exitDate);
       html += `<div class="alert" style="background:var(--color-primary)11;border:1px solid var(--color-primary)44">
-        <span style="color:var(--color-primary);font-size:0.88rem">◷ Salida prevista — <strong>${t.name}</strong></span>
+        <span style="color:var(--color-primary);font-size:0.88rem">◷ ${t("exitAlert")} — <strong>${t.name}</strong></span>
         <span style="color:var(--color-primary);font-family:monospace;font-size:0.82rem">en ${d}j</span>
       </div>`;
     });
@@ -438,14 +526,14 @@ function renderDashboard() {
 
   const ADRESSE = "Calle de las Flores, 12, Almería, España";
   const MAPS_EMBED = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3178.5!2d-2.4637!3d36.8403!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd7a9c3b3b3b3b3b%3A0x0!2zQWxtZXLDrWE!5e0!3m2!1sfr!2ses!4v1234567890";
-  html += `<div class="section-title" style="margin-top:1.5rem">LOCALIZACIÓN</div>
+  html += `<div class="section-title" style="margin-top:1.5rem">${t("location")}</div>
   <div class="card" style="padding:0;overflow:hidden">
     <div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #B5D4F4">
       <div style="display:flex;align-items:center;gap:10px">
         <i class="ti ti-map-pin" style="font-size:20px;color:#1A2B4A"></i>
         <div>
           <div style="font-weight:600;font-size:0.85rem;color:#1A2B4A">${ADRESSE}</div>
-          <div style="font-size:0.72rem;color:#5B7FA6;font-family:monospace">Mi apartamento</div>
+          <div style="font-size:0.72rem;color:#5B7FA6;font-family:monospace">${t("myApartment")}</div>
         </div>
       </div>
       <a href="https://maps.google.com/?q=${encodeURIComponent(ADRESSE)}" target="_blank" style="display:flex;align-items:center;gap:5px;background:#1A2B4A;color:#fff;padding:5px 12px;border-radius:20px;font-size:0.72rem;font-family:monospace;text-decoration:none;flex-shrink:0">
@@ -492,9 +580,9 @@ function renderRooms() {
 function renderTenants() {
   let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
     <h1 class="page-title" style="margin:0">Inquilinos</h1>
-    <button class="btn btn-primary" onclick="openAddTenant('')">+ Añadir</button>
+    <button class="btn btn-primary" onclick="openAddTenant('')">${t("addTenant")}</button>
   </div>`;
-  if (!tenants.length) html += `<div style="text-align:center;color:#5B7FA6;padding:3rem;font-family:monospace">Sin inquilinos. Clique + Añadir !</div>`;
+  if (!tenants.length) html += `<div style="text-align:center;color:#5B7FA6;padding:3rem;font-family:monospace">${t("noTenants")}</div>`;
   tenants.filter(t => t.status !== 'archived').forEach(t => {
     const r = roomById(t.room);
     html += `<div style="background:#FFFFFF;border-radius:12px;border:0.5px solid #B5D4F4;margin-bottom:10px;overflow:hidden;box-shadow:0 2px 8px rgba(26,43,74,0.06)">
@@ -516,18 +604,18 @@ function renderTenants() {
         </div>
       </div>
       <div style="border-top:0.5px solid #B5D4F4;padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap;background:#F8FAFD">
-        <button style="background:transparent;border:0.5px solid #2E7D8C;color:#2E7D8C;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openPayment('${t.id}')">Pago</button>
-        <button style="background:transparent;border:0.5px solid #D4A843;color:#9A7520;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openDeposit('${t.id}')">Fianza</button>
-        <button style="background:transparent;border:0.5px solid #2E508C;color:#2E508C;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openEtatLieux('${t.id}')">Estado vivienda</button>
-        <button style="background:transparent;border:0.5px solid #25D366;color:#25D366;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openWhatsApp('${t.id}')">WhatsApp</button>
-        <button style="background:transparent;border:0.5px solid #7D2340;color:#7D2340;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="confirmDelete('${t.id}')">Eliminar</button>
+        <button style="background:transparent;border:0.5px solid #2E7D8C;color:#2E7D8C;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openPayment('${t.id}')">${t('pago')}</button>
+        <button style="background:transparent;border:0.5px solid #D4A843;color:#9A7520;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openDeposit('${t.id}')">${t('fianza')}</button>
+        <button style="background:transparent;border:0.5px solid #2E508C;color:#2E508C;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openEtatLieux('${t.id}')">${t('estadoVivienda')}</button>
+        <button style="background:transparent;border:0.5px solid #25D366;color:#25D366;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="openWhatsApp('${t.id}')">${t('whatsapp')}</button>
+        <button style="background:transparent;border:0.5px solid #7D2340;color:#7D2340;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer" onclick="confirmDelete('${t.id}')">${t('eliminar')}</button>
       </div>
       <div style="border-top:0.5px solid #EEF2F8;padding:10px 16px;background:#fff">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:11px;color:#5B7FA6;font-family:monospace"><i class="ti ti-folder" style="font-size:12px;vertical-align:-1px;color:#D4A843"></i> DOCUMENTOS (${(documents[t.id]||[]).length})</span>
+          <span style="font-size:11px;color:#5B7FA6;font-family:monospace"><i class="ti ti-folder" style="font-size:12px;vertical-align:-1px;color:#D4A843"></i> ${t("documents")} (${(documents[t.id]||[]).length})</span>
           <label style="cursor:pointer;background:#1A2B4A;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;font-weight:600">+ Añadir<input type="file" style="display:none" accept="*/*" onchange="uploadDoc('${t.id}', this)"></label>
         </div>
-        ${(documents[t.id]||[]).length===0 ? `<div style="text-align:center;padding:8px;background:#F8FAFD;border-radius:8px;border:1px dashed #B5D4F4;color:#5B7FA6;font-size:11px;font-family:monospace">Sin documentos</div>` :
+        ${(documents[t.id]||[]).length===0 ? `<div style="text-align:center;padding:8px;background:#F8FAFD;border-radius:8px;border:1px dashed #B5D4F4;color:#5B7FA6;font-size:11px;font-family:monospace">${t("noDocuments")}</div>` :
           (documents[t.id]||[]).map(doc => {
             const isImg = doc.type && doc.type.startsWith('image/');
             const isPdf = doc.type === 'application/pdf';
@@ -573,12 +661,12 @@ function renderPayments() {
           <div style="font-size:0.75rem;color:var(--color-text-muted);font-family:monospace">${r?.name||'—'}</div>
         </div>
         <div style="font-family:monospace;color:var(--color-primary);font-weight:700">${t.rent||0} €</div>
-        ${p ? `<div style="display:flex;align-items:center;gap:8px">${payBadge(p.status)}${p.status!=='paid' ? `<button onclick="quickPay('${t.id}','${month}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;cursor:pointer">✓ Pagado</button>` : ''}</div>` :
-          `<button onclick="quickPay('${t.id}','${month}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;cursor:pointer">✓ Pagado</button>`}
+        ${p ? `<div style="display:flex;align-items:center;gap:8px">${payBadge(p.status)}${p.status!=='paid' ? `<button onclick="quickPay('${t.id}','${month}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;cursor:pointer">${t('paid')}</button>` : ''}</div>` :
+          `<button onclick="quickPay('${t.id}','${month}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;cursor:pointer">${t('paid')}</button>`}
       </div>`;
     });
     html += `<div style="padding:0.7rem 1rem;background:#EEF2F8;border-radius:8px;border:0.5px solid #B5D4F4;display:flex;justify-content:space-between">
-      <span style="font-size:0.8rem;color:var(--color-text-muted);font-family:monospace">Total cobrado</span>
+      <span style="font-size:0.8rem;color:var(--color-text-muted);font-family:monospace">${t("totalCobrado")}</span>
       <span style="font-family:monospace;color:var(--color-green);font-weight:700">${total} €</span>
     </div></div>`;
   });
@@ -592,19 +680,19 @@ function renderDeposits() {
   let html = `<h1 class="page-title">Garantías</h1>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
     <div style="background:#1A2B4A;border-radius:10px;padding:10px 8px;text-align:center">
-      <div style="font-size:9px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px;letter-spacing:0.06em">ANTICIPOS</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px;letter-spacing:0.06em">${t("anticipos")}</div>
       <div style="font-size:16px;font-weight:700;color:#ffffff">${totalAdv} €</div>
     </div>
     <div style="background:#1A2B4A;border-radius:10px;padding:10px 8px;text-align:center">
-      <div style="font-size:9px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px;letter-spacing:0.06em">FIANZAS</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px;letter-spacing:0.06em">${t("fianzas")}</div>
       <div style="font-size:16px;font-weight:700;color:#ffffff">${totalFia} €</div>
     </div>
     <div style="background:#1A2B4A;border-radius:10px;padding:10px 8px;text-align:center;border:1.5px solid #D4A843">
-      <div style="font-size:9px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px;letter-spacing:0.06em">TOTAL</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px;letter-spacing:0.06em">${t("total")}</div>
       <div style="font-size:16px;font-weight:700;color:#ffffff">${totalAdv+totalFia} €</div>
     </div>
   </div>
-  <div class="section-title">DETALLE POR INQUILINO</div>`;
+  <div class="section-title">${t("detailInquilino")}</div>`;
 
   tenants.forEach(t => {
     const r = roomById(t.room);
@@ -618,26 +706,26 @@ function renderDeposits() {
           <div><div style="font-weight:600;font-size:13px;color:#1A2B4A">${t.name}</div><div style="font-size:10px;color:#8a9ab5">${r?.name||'—'} · ${t.rent||0} €/mes</div></div>
         </div>
         <div style="display:flex;gap:5px">
-          <button style="font-size:10px;background:transparent;border:0.5px solid #B5D4F4;color:#1A2B4A;border-radius:20px;padding:2px 8px;cursor:pointer" onclick="openDeposit('${t.id}')">Modificar</button>
-          <button style="font-size:10px;background:#7D2340;border:none;color:#fff;border-radius:20px;padding:2px 8px;cursor:pointer" onclick="exportDepositPDF('${t.id}')">PDF</button>
+          <button style="font-size:10px;background:transparent;border:0.5px solid #B5D4F4;color:#1A2B4A;border-radius:20px;padding:2px 8px;cursor:pointer" onclick="openDeposit('${t.id}')">${t('modify')}</button>
+          <button style="font-size:10px;background:#7D2340;border:none;color:#fff;border-radius:20px;padding:2px 8px;cursor:pointer" onclick="exportDepositPDF('${t.id}')">${t('pdf')}</button>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:0.5px solid #EEF2F8">
         <div style="padding:10px 12px;border-right:0.5px solid #EEF2F8">
-          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">MES ANTICIPO</div>
+          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">${t("mesAnticipo")}</div>
           <div style="font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:3px">${d.advance||0} €</div>
           ${depBadge(d.advanceStatus)}
           <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-top:3px">${d.advancePaidDate ? fmtDate(d.advancePaidDate) : '—'}</div>
         </div>
         <div style="padding:10px 12px">
-          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">FIANZA</div>
+          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">${t("fianzas").replace("S","")}</div>
           <div style="font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:3px">${d.fianza||0} €</div>
           ${depBadge(d.fianzaStatus)}
           <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-top:3px">${d.fianzaPaidDate ? fmtDate(d.fianzaPaidDate) : '—'}</div>
         </div>
       </div>
       <div style="padding:8px 14px;background:#7D234011;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:10px;color:#9B6070;font-family:monospace">TOTAL GARANTÍAS</span>
+        <span style="font-size:10px;color:#9B6070;font-family:monospace">${t("totalGarantias")}</span>
         <span style="font-size:16px;font-weight:700;color:#7D2340">${total} €</span>
       </div>
       ${d.notes ? `<div style="padding:6px 14px;font-size:11px;color:#8a9ab5;font-style:italic;border-top:0.5px solid #EEF2F8">${d.notes}</div>` : ''}
@@ -889,7 +977,7 @@ function renderCalendar() {
       ${statusBadge(t.status)}
     </div>`;
   });
-  if (!tenants.length) html += `<div style="text-align:center;color:var(--color-text-muted);padding:3rem;font-family:monospace">Sin inquilinos registrados.</div>`;
+  if (!tenants.length) html += `<div style="text-align:center;color:var(--color-text-muted);padding:3rem;font-family:monospace">${t("noTenantsReg")}</div>`;
   document.getElementById('tab-calendar').innerHTML = html;
 }
 
@@ -1003,7 +1091,7 @@ function openEtatLieux(tenantId) {
       <div style="font-size:0.75rem;font-family:monospace;color:#5B7FA6;margin-bottom:0.5rem">NOTAS DE ESTADO</div>
       <div style="color:#1A2B4A;line-height:1.6;font-size:0.9rem">${t.etatLieux||'Sin notas registradas.'}</div>
     </div>
-    <div style="font-size:0.78rem;color:#5B7FA6;font-family:monospace">Entrada: ${fmtDate(t.entryDate)} · Salida prevista: ${fmtDate(t.exitDate)}</div>
+    <div style="font-size:0.78rem;color:#5B7FA6;font-family:monospace">Entrada: ${fmtDate(t.entryDate)} · ${t("exitAlert")}: ${fmtDate(t.exitDate)}</div>
     <div style="display:flex;justify-content:flex-end;margin-top:1rem"><button class="btn btn-outline-y" onclick="closeModal()">Cerrar</button></div>`);
 }
 
@@ -1057,17 +1145,15 @@ async function deleteDoc(tenantId, docId) {
   renderTenants();
 }
 function confirmDelete(id) {
-  const t = tenants.find(x => x.id===id);
-  openModal('Archivar inquilino', `
-    <p style="color:#1A2B4A;margin-bottom:0.8rem;font-size:0.9rem;line-height:1.6">¿Archivar a <strong>${t?.name||''}</strong>?</p>
+  const ten = tenants.find(x => x.id===id);
+  openModal(t('archiveTitle'), `
+    <p style="color:#1A2B4A;margin-bottom:0.8rem;font-size:0.9rem;line-height:1.6">${t('archive')} <strong>${ten?.name||''}</strong> ?</p>
     <div style="background:#EEF2F8;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;border:0.5px solid #B5D4F4;font-size:0.82rem;color:#5B7FA6;line-height:1.6">
-      <i class="ti ti-info-circle" style="color:#1A2B4A"></i>
-      El inquilino será <strong style="color:#1A2B4A">archivado</strong>, no eliminado.<br>
-      Todos sus datos (pagos, garantías, documentos) quedan <strong style="color:#2E7D8C">guardados</strong> en Firebase.
+      <i class="ti ti-info-circle" style="color:#1A2B4A"></i> ${t('archiveMsg')}
     </div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end">
-      <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
-      <button class="btn" style="background:#1A2B4A;color:#fff;border-color:#1A2B4A;border-radius:20px" onclick="archiveTenant('${id}')">Archivar</button>
+      <button class="btn btn-outline-y" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn" style="background:#1A2B4A;color:#fff;border-color:#1A2B4A;border-radius:20px" onclick="archiveTenant('${id}')">${t('archive')}</button>
     </div>`);
 }
 

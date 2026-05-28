@@ -39,7 +39,7 @@
     .header-sub { font-size: 0.6rem; color: #C9A96E; font-family: monospace; letter-spacing: 0.08em; white-space: nowrap; }
     .header-logo-wrapper { display: flex; align-items: center; gap: 0.7rem; flex-shrink: 0; }
     .header-text-wrapper { border-left: 2px solid #C9A96E; padding-left: 0.7rem; }
-    .free-badges { display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: flex-end; max-width: 45%; }
+    .free-badges { display: flex; align-items: center; flex-shrink: 0; }
     .free-badge { font-size: 0.58rem; padding: 0.12rem 0.35rem; border-radius: 4px; font-family: monospace; background: transparent; color: #FAF6F1; border: 1px solid rgba(255,255,255,0.4); white-space: nowrap; }
     .nav { display: flex; border-bottom: 1.5px solid #c5d4e8; overflow-x: auto; scrollbar-width: none; background: #FFFFFF; box-shadow: 0 2px 8px rgba(26,43,74,0.06); }
     .nav::-webkit-scrollbar { display: none; }
@@ -222,7 +222,7 @@ const TRANSLATIONS = {
     depositTitle:'Fianza & Garantía', refRent:'Alquiler de referencia',
     advanceStatus:'Estado avance', depositStatus:'Estado caución',
     estadoTitle:'Estado de la vivienda', statusNotes:'NOTAS DE ESTADO',
-    noNotes:'Sin notas registradas.', entry:'Entrada', exitPrev:'${t("exitAlert")}',
+    noNotes:'Sin notas registradas.', entry:'Entrada', exitPrev:'Salida prevista',
     close:'Cerrar', send:'Enviar WhatsApp',
     facturaType:'Tipo', facturaMonth:'Mes (AAAA-MM)', facturaAmount:'Importe total (€)',
     deleteFacturaTitle:'Eliminar factura', noFacturas:'Sin facturas. Clique + Nueva factura !',
@@ -231,9 +231,9 @@ const TRANSLATIONS = {
     thisWeek:'Esta semana', nextWeek:'Semana próxima', lastWeek:'Semana pasada',
     noActiveTenants:'Sin inquilinos activos', tasksCompleted:'tareas completadas',
     planning:'PLANIFICACIÓN 5 PRÓXIMAS SEMANAS', thisSem:'Esta sem.', nextSem:'Próx. sem.',
-    calTitle:t('calTitle'), noTenantsReg:'Sin inquilinos registrados.',
+    calTitle:'Calendario Entradas / Salidas', noTenantsReg:'Sin inquilinos registrados.',
     inEntry:'Entrada', inExit:'Salida', today:'hoy', expired:'vencido', inDays:'en',
-    lateAlert:'${t("lateAlert")}', exitAlert:'${t("exitAlert")}',
+    lateAlert:'Pago atrasado', exitAlert:'Salida prevista',
   },
   en: {
     dashboard:'⌂ Dashboard', rooms:'⊞ Rooms', tenants:'◎ Tenants',
@@ -346,9 +346,9 @@ function setLang(lang) {
 
 function openSettings() {
   const langs = [
-    { code: 'es', flag: '🇪🇸', label: 'Español' },
-    { code: 'en', flag: '🏴', label: 'EN — English' },
-    { code: 'fr', flag: '🇫🇷', label: 'Français' },
+    { code: 'es', badge: 'ES', label: 'Español' },
+    { code: 'en', badge: 'EN', label: 'English' },
+    { code: 'fr', badge: 'FR', label: 'Français' },
   ];
   openModal(t('settings'), `
     <p style="font-size:11px;font-family:monospace;color:#8a9ab5;letter-spacing:0.1em;margin-bottom:12px">${t('language')}</p>
@@ -356,10 +356,10 @@ function openSettings() {
       ${langs.map(l => `
         <div onclick="setLang('${l.code}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:${currentLang===l.code?'#1A2B4A':'#F8FAFD'};border-radius:10px;cursor:pointer;border:0.5px solid ${currentLang===l.code?'#1A2B4A':'#B5D4F4'}">
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:20px">${l.flag}</span>
+            <span style="font-size:11px;font-family:monospace;background:${currentLang===l.code?'rgba(255,255,255,0.15)':'#1A2B4A18'};color:${currentLang===l.code?'#fff':'#1A2B4A'};padding:3px 7px;border-radius:6px;font-weight:500">${l.badge}</span>
             <span style="font-size:13px;font-weight:500;color:${currentLang===l.code?'#fff':'#1A2B4A'}">${l.label}</span>
           </div>
-          ${currentLang===l.code ? `<span style="color:#D4A843;font-size:11px;font-family:monospace">✓</span>` : ''}
+          ${currentLang===l.code ? `<span style="color:#D4A843;font-size:13px">✓</span>` : ''}
         </div>`).join('')}
     </div>`);
 }
@@ -464,9 +464,12 @@ function loadData(onTenantsReady) {
 function updateFreeBadges() {
   const occupied = activeTenants().map(t => t.room);
   const free = ROOMS.filter(r => !occupied.includes(r.id));
-  document.getElementById('free-badges').innerHTML = free.map(r =>
-    `<span class="free-badge">${r.name.replace("Habitación","H.")}</span>`
-  ).join('');
+  const freeLabel = currentLang === 'fr' ? 'libre' : currentLang === 'en' ? 'free' : 'libre';
+  document.getElementById('free-badges').innerHTML = `
+    <div style="display:flex;flex-direction:row;gap:4px;align-items:center;flex-wrap:nowrap">
+      ${free.length > 0 ? `<span style="font-size:9px;color:#C9A96E;font-family:monospace;white-space:nowrap;margin-right:3px">${free.length} ${freeLabel}</span>` : ''}
+      ${free.map(r => `<span style="font-size:9px;color:#FAF6F1;border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:2px 5px;font-family:monospace;white-space:nowrap">${r.name.replace("Habitación","H.").replace("Room","R.").replace("Chambre","Ch.")}</span>`).join('')}
+    </div>`;
 }
 
 function renderDashboard() {

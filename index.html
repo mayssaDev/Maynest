@@ -202,7 +202,7 @@ function fmtDate(d) { if (!d) return '—'; const [y,m,day] = d.split('-'); retu
 function daysUntil(d) { if (!d) return null; return Math.ceil((new Date(d) - new Date()) / 86400000); }
 function getWeek() { const d = new Date(); return Math.ceil(((d - new Date(d.getFullYear(),0,1))/86400000 + new Date(d.getFullYear(),0,1).getDay()+1)/7); }
 function currentMonth() { return new Date().toISOString().slice(0,7); }
-function activeTenants() { return tenants.filter(t => t.status !== 'ended'); }
+function activeTenants() { return tenants.filter(t => t.status !== 'ended' && t.status !== 'archived'); }
 function badge(label, color) { return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${label}</span>`; }
 function statusBadge(s) {
   const map = { active: ['Activo','#2E7D8C'], leaving: ['En salida','#D4A843'], ended: ['Terminado','#5B7FA6'] };
@@ -227,15 +227,11 @@ function getDel() { return window.dbFns.deleteDoc; }
 function getSnap() { return window.dbFns.onSnapshot; }
 
 async function saveTenant(t) { await getSet()(getDoc()(getDb(),'tenants',t.id), t); }
-async function deleteTenant(id) {
-  const db = getDb(), docFn = getDoc(), delFn = getDel();
-  const tenantPayments = payments.filter(p => p.tenantId === id);
-  await delFn(docFn(db,'tenants',id));
-  await delFn(docFn(db,'deposits',id));
-  await Promise.all(tenantPayments.map(p => delFn(docFn(db,'payments',p.id))));
-  deposits = deposits.filter(d => d.tenantId !== id);
-  tenants = tenants.filter(t => t.id !== id);
-  payments = payments.filter(p => p.tenantId !== id);
+async function archiveTenant(id) {
+  const t = tenants.find(x => x.id === id);
+  if (!t) return;
+  // On archive seulement — on ne supprime JAMAIS les données
+  await saveTenant({ ...t, status: 'archived' });
   closeModal();
   renderTab(currentTab);
   updateFreeBadges();
@@ -401,7 +397,7 @@ function renderTenants() {
     <button class="btn btn-primary" onclick="openAddTenant('')">+ Añadir</button>
   </div>`;
   if (!tenants.length) html += `<div style="text-align:center;color:#5B7FA6;padding:3rem;font-family:monospace">Sin inquilinos. Clique + Añadir !</div>`;
-  tenants.forEach(t => {
+  tenants.filter(t => t.status !== 'archived').forEach(t => {
     const r = roomById(t.room);
     html += `<div style="background:#FFFFFF;border-radius:12px;border:0.5px solid #B5D4F4;margin-bottom:10px;overflow:hidden;box-shadow:0 2px 8px rgba(26,43,74,0.06)">
       <div style="display:flex;align-items:center;gap:12px;padding:14px 16px">
@@ -964,10 +960,16 @@ async function deleteDoc(tenantId, docId) {
 }
 function confirmDelete(id) {
   const t = tenants.find(x => x.id===id);
-  openModal('Eliminar', `<p style="color:#1A2B4A;margin-bottom:1.5rem;font-family:'Segoe UI',system-ui,sans-serif;font-size:0.9rem;line-height:1.6">¿Eliminar a <strong>${t?.name||''}</strong>? Esta acción es irreversible.</p>
+  openModal('Archivar inquilino', `
+    <p style="color:#1A2B4A;margin-bottom:0.8rem;font-size:0.9rem;line-height:1.6">¿Archivar a <strong>${t?.name||''}</strong>?</p>
+    <div style="background:#EEF2F8;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;border:0.5px solid #B5D4F4;font-size:0.82rem;color:#5B7FA6;line-height:1.6">
+      <i class="ti ti-info-circle" style="color:#1A2B4A"></i>
+      El inquilino será <strong style="color:#1A2B4A">archivado</strong>, no eliminado.<br>
+      Todos sus datos (pagos, garantías, documentos) quedan <strong style="color:#2E7D8C">guardados</strong> en Firebase.
+    </div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end">
       <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
-      <button class="btn" style="background:var(--color-red);color:#fff;border-color:var(--color-red)" onclick="deleteTenant('${id}')">Eliminar</button>
+      <button class="btn" style="background:#1A2B4A;color:#fff;border-color:#1A2B4A;border-radius:20px" onclick="archiveTenant('${id}')">Archivar</button>
     </div>`);
 }
 

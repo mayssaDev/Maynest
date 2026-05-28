@@ -121,6 +121,7 @@
     <button class="nav-btn" onclick="showTab('tenants')">◎ Inquilinos</button>
     <button class="nav-btn" onclick="showTab('payments')">◈ Pagos</button>
     <button class="nav-btn" onclick="showTab('deposits')">⬡ Garantías</button>
+    <button class="nav-btn" onclick="showTab('facturas')">⚡ Facturas</button>
     <button class="nav-btn" onclick="showTab('cleaning')">✦ Limpieza</button>
     <button class="nav-btn" onclick="showTab('calendar')">◷ Calendario</button>
   </div>
@@ -132,6 +133,7 @@
     <div id="tab-deposits" class="hidden"></div>
     <div id="tab-cleaning" class="hidden"></div>
     <div id="tab-calendar" class="hidden"></div>
+    <div id="tab-facturas" class="hidden"></div>
   </div>
 </div>
 <div id="modal" class="modal-overlay hidden">
@@ -173,12 +175,12 @@ const CLEAN_TASKS = {
   'Cocina': ['Limpiar las superficies','Lavar los platos comunes','Limpiar el horno/microondas','Vaciar/limpiar el frigorífico','Barrer y lavar el suelo'],
   'Salón': ['Aspirar/barrer','Quitar el polvo de los muebles','Limpiar los cristales','Vaciar las papeleras','Ordenar los espacios comunes'],
 };
-let tenants = [], payments = [], deposits = [], cleaning = {}, documents = {};
-let currentTab = 'dashboard', cleanWeekOffset = 0;
+let tenants = [], payments = [], deposits = [], cleaning = {}, documents = {}, facturas = [];
+let currentTab = 'dashboard', cleanWeekOffset = 0, facturaFilter = 'electricidad';
 
 function showTab(tab) {
   document.querySelectorAll('.nav-btn').forEach((b,i) => {
-    b.classList.toggle('active', ['dashboard','rooms','tenants','payments','deposits','cleaning','calendar'][i] === tab);
+    b.classList.toggle('active', ['dashboard','rooms','tenants','payments','deposits','facturas','cleaning','calendar'][i] === tab);
   });
   document.querySelectorAll('.main > div').forEach(d => d.classList.add('hidden'));
   document.getElementById('tab-' + tab).classList.remove('hidden');
@@ -191,6 +193,7 @@ function renderTab(tab) {
   if (tab === 'tenants') renderTenants();
   if (tab === 'payments') renderPayments();
   if (tab === 'deposits') renderDeposits();
+  if (tab === 'facturas') renderFacturas();
   if (tab === 'cleaning') renderCleaning();
   if (tab === 'calendar') renderCalendar();
 }
@@ -241,6 +244,8 @@ async function savePayment(p) { await getSet()(getDoc()(getDb(),'payments',p.id)
 async function saveDeposit(d) { await getSet()(getDoc()(getDb(),'deposits',d.tenantId), d); }
 async function saveCleaning(c) { await getSet()(getDoc()(getDb(),'cleaning','data'), c); }
 async function saveDocuments(tenantId, files) { await getSet()(getDoc()(getDb(),'documents',tenantId), { files }); }
+async function saveFactura(f) { await getSet()(getDoc()(getDb(),'facturas',f.id), f); }
+async function deleteFactura(id) { await getDel()(getDoc()(getDb(),'facturas',id)); }
 
 function loadData(onTenantsReady) {
   const db = getDb(), onSnapshot = getSnap(), collection = getCol();
@@ -267,6 +272,10 @@ function loadData(onTenantsReady) {
     documents = {};
     snap.docs.forEach(d => { documents[d.id] = d.data().files || []; });
     if (currentTab === 'tenants') renderTenants();
+  });
+  onSnapshot(collection(db,'facturas'), snap => {
+    facturas = snap.docs.map(d => d.data());
+    if (currentTab === 'facturas') renderFacturas();
   });
 }
 
@@ -576,6 +585,140 @@ function exportDepositPDF(tenantId) {
   win.document.write(html);
   win.document.close();
   setTimeout(() => win.print(), 500);
+}
+
+function renderFacturas() {
+  const filtered = facturas.filter(f => f.type === facturaFilter).sort((a,b) => b.month.localeCompare(a.month));
+  const active = activeTenants();
+
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
+    <h1 class="page-title" style="margin:0">Facturas</h1>
+    <button class="btn btn-primary" onclick="openNewFactura()">+ Nueva factura</button>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:1.2rem">
+    <button onclick="facturaFilter='electricidad';renderFacturas()" style="flex:1;background:${facturaFilter==='electricidad'?'#1A2B4A':'#fff'};color:${facturaFilter==='electricidad'?'#fff':'#1A2B4A'};border:1.5px solid #1A2B4A;border-radius:20px;padding:8px 12px;font-size:12px;font-family:monospace;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+      <i class="ti ti-bolt" style="font-size:14px"></i> Electricidad
+    </button>
+    <button onclick="facturaFilter='agua';renderFacturas()" style="flex:1;background:${facturaFilter==='agua'?'#2E7D8C':'#fff'};color:${facturaFilter==='agua'?'#fff':'#2E7D8C'};border:1.5px solid #2E7D8C;border-radius:20px;padding:8px 12px;font-size:12px;font-family:monospace;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+      <i class="ti ti-droplet" style="font-size:14px"></i> Agua
+    </button>
+  </div>`;
+
+  if (!filtered.length) {
+    html += `<div style="text-align:center;color:#5B7FA6;padding:3rem;font-family:monospace">Sin facturas. Clique + Nueva factura !</div>`;
+  }
+
+  filtered.forEach(f => {
+    const [y,m] = f.month.split('-');
+    const label = new Date(y,m-1).toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+    const parPerson = active.length ? Math.round((f.amount / active.length) * 100) / 100 : 0;
+    const pagados = (f.pagos||[]).filter(p => p.status==='paid').length;
+    const totalCobrado = (f.pagos||[]).filter(p => p.status==='paid').length * parPerson;
+    const allPaid = pagados === active.length;
+    const icon = f.type === 'electricidad' ? 'ti-bolt' : 'ti-droplet';
+    const color = f.type === 'electricidad' ? '#D4A843' : '#2E7D8C';
+
+    html += `<div style="background:#fff;border-radius:12px;overflow:hidden;margin-bottom:10px;border:0.5px solid #B5D4F4">
+      <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #B5D4F4;background:#F8FAFD">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:34px;height:34px;border-radius:10px;background:${color}18;display:flex;align-items:center;justify-content:center">
+            <i class="ti ${icon}" style="font-size:18px;color:${color}"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:13px;color:#1A2B4A">${f.type==='electricidad'?'Electricidad':'Agua'} — ${label}</div>
+            <div style="font-size:10px;color:#8a9ab5;font-family:monospace">Total: ${f.amount} € · ${active.length} inquilinos · ${parPerson} € c/u</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:10px;background:${allPaid?'#2E7D8C18':'#D4A84318'};color:${allPaid?'#2E7D8C':'#9A7520'};padding:2px 8px;border-radius:10px;font-family:monospace">${pagados}/${active.length} Pagado</span>
+          <button onclick="deleteFacturaConfirm('${f.id}')" style="background:transparent;border:none;cursor:pointer;color:#7D2340"><i class="ti ti-trash" style="font-size:14px"></i></button>
+        </div>
+      </div>
+      <div style="padding:8px 14px">`;
+
+    active.forEach(t => {
+      const r = roomById(t.room);
+      const pago = (f.pagos||[]).find(p => p.tenantId===t.id);
+      const isPaid = pago?.status === 'paid';
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid #EEF2F8">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:50%;background:${r?.color}18;border:1px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${r?.color}">${t.name[0]}</div>
+          <span style="font-size:12px;color:#1A2B4A;font-weight:500">${t.name.split(' ')[0]}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;font-weight:600;color:#1A2B4A;font-family:monospace">${parPerson} €</span>
+          ${isPaid
+            ? `<span style="font-size:10px;background:#2E7D8C18;color:#2E7D8C;padding:2px 8px;border-radius:10px;font-family:monospace">Pagado</span>`
+            : `<span style="font-size:10px;background:#7D234018;color:#7D2340;padding:2px 8px;border-radius:10px;font-family:monospace">Pendiente</span>
+               <button onclick="pagarFactura('${f.id}','${t.id}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:2px 8px;font-size:10px;font-family:monospace;cursor:pointer">✓</button>`
+          }
+        </div>
+      </div>`;
+    });
+
+    html += `</div>
+      <div style="padding:8px 14px;background:${allPaid?'#2E7D8C18':'#EEF2F8'};display:flex;justify-content:space-between">
+        <span style="font-size:10px;color:#5B7FA6;font-family:monospace">Cobrado: ${totalCobrado.toFixed(0)} € / ${f.amount} €</span>
+        <span style="font-size:10px;color:${allPaid?'#2E7D8C':'#7D2340'};font-family:monospace;font-weight:600">${allPaid?'✓ Completo':'Pendiente: '+(f.amount-totalCobrado).toFixed(0)+' €'}</span>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('tab-facturas').innerHTML = html;
+}
+
+function openNewFactura() {
+  openModal('Nueva factura', `
+    <div class="form-group"><label class="form-label">Tipo</label>
+      <select class="form-select" id="fac-type">
+        <option value="electricidad">⚡ Electricidad</option>
+        <option value="agua">💧 Agua</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Mes (AAAA-MM)</label>
+      <input class="form-input" id="fac-month" value="${currentMonth()}">
+    </div>
+    <div class="form-group"><label class="form-label">Importe total (€)</label>
+      <input class="form-input" type="number" id="fac-amount" placeholder="Ex: 120">
+    </div>
+    <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">
+      <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNewFactura()">Guardar</button>
+    </div>`);
+}
+
+async function saveNewFactura() {
+  const type = document.getElementById('fac-type').value;
+  const month = document.getElementById('fac-month').value;
+  const amount = Number(document.getElementById('fac-amount').value);
+  if (!amount || !month) return alert('Rellena todos los campos');
+  const id = `fac_${type}_${month}_${Date.now()}`;
+  const f = { id, type, month, amount, pagos: [] };
+  await saveFactura(f);
+  facturaFilter = type;
+  closeModal();
+}
+
+async function pagarFactura(facturaId, tenantId) {
+  const f = facturas.find(x => x.id===facturaId);
+  if (!f) return;
+  const pagos = [...(f.pagos||[])];
+  const idx = pagos.findIndex(p => p.tenantId===tenantId);
+  if (idx >= 0) pagos[idx] = { ...pagos[idx], status:'paid' };
+  else pagos.push({ tenantId, status:'paid' });
+  await saveFactura({ ...f, pagos });
+}
+
+function deleteFacturaConfirm(id) {
+  const f = facturas.find(x => x.id===id);
+  const label = f?.type==='electricidad' ? 'Electricidad' : 'Agua';
+  openModal('Eliminar factura', `
+    <p style="color:#1A2B4A;margin-bottom:1.5rem;font-size:0.9rem;line-height:1.6">¿Eliminar factura <strong>${label} ${f?.month}</strong>? Esta acción es irreversible.</p>
+    <div style="display:flex;gap:0.8rem;justify-content:flex-end">
+      <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
+      <button class="btn" style="background:var(--color-red);color:#fff;border-color:var(--color-red)" onclick="deleteFactura('${id}');closeModal()">Eliminar</button>
+    </div>`);
 }
 
 function renderCleaning() {

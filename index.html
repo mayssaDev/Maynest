@@ -114,16 +114,17 @@
       </div>
     </div>
     <div class="free-badges" id="free-badges"></div>
+    <button onclick="openSettings()" style="background:rgba(255,255,255,0.1);color:#FAF6F1;border:none;border-radius:8px;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0">⚙️</button>
   </div>
   <div class="nav">
-    <button class="nav-btn active" onclick="showTab('dashboard')">⌂ Panel principal</button>
-    <button class="nav-btn" onclick="showTab('rooms')">⊞ Habitaciones</button>
-    <button class="nav-btn" onclick="showTab('tenants')">◎ Inquilinos</button>
-    <button class="nav-btn" onclick="showTab('payments')">◈ Pagos</button>
-    <button class="nav-btn" onclick="showTab('deposits')">⬡ Garantías</button>
-    <button class="nav-btn" onclick="showTab('facturas')">⚡ Facturas</button>
-    <button class="nav-btn" onclick="showTab('cleaning')">✦ Limpieza</button>
-    <button class="nav-btn" onclick="showTab('calendar')">◷ Calendario</button>
+    <button class="nav-btn active" onclick="showTab('dashboard')" id="nav-dashboard">⌂ Panel principal</button>
+    <button class="nav-btn" onclick="showTab('rooms')" id="nav-rooms">⊞ Habitaciones</button>
+    <button class="nav-btn" onclick="showTab('tenants')" id="nav-tenants">◎ Inquilinos</button>
+    <button class="nav-btn" onclick="showTab('payments')" id="nav-payments">◈ Pagos</button>
+    <button class="nav-btn" onclick="showTab('deposits')" id="nav-deposits">⬡ Garantías</button>
+    <button class="nav-btn" onclick="showTab('facturas')" id="nav-facturas">⚡ Facturas</button>
+    <button class="nav-btn" onclick="showTab('cleaning')" id="nav-cleaning">✦ Limpieza</button>
+    <button class="nav-btn" onclick="showTab('calendar')" id="nav-calendar">◷ Calendario</button>
   </div>
   <div class="main">
     <div id="tab-dashboard"></div>
@@ -177,6 +178,103 @@ const CLEAN_TASKS = {
 };
 let tenants = [], payments = [], deposits = [], cleaning = {}, documents = {}, facturas = [];
 let currentTab = 'dashboard', cleanWeekOffset = 0, facturaFilter = 'electricidad';
+
+// ============================================
+// SISTEMA DE IDIOMAS
+// ============================================
+let currentLang = localStorage.getItem('maynest-lang') || 'es';
+
+const TRANSLATIONS = {
+  es: {
+    dashboard: '⌂ Panel principal', rooms: '⊞ Habitaciones', tenants: '◎ Inquilinos',
+    payments: '◈ Pagos', deposits: '⬡ Garantías', facturas: '⚡ Facturas',
+    cleaning: '✦ Limpieza', calendar: '◷ Calendario',
+    addTenant: '+ Añadir', editTenant: 'Modificar inquilino', newTenant: 'Nuevo inquilino',
+    save: 'Guardar', cancel: 'Cancelar', update: 'Actualizar', delete: 'Eliminar',
+    archive: 'Archivar', name: 'Nombre completo', room: 'Habitación',
+    phone: 'Teléfono', email: 'Email', entryDate: 'Fecha de entrada',
+    exitDate: 'Fecha de salida', rent: 'Alquiler mensual (€)', status: 'Estado',
+    notes: 'Notas', active: 'Activo', leaving: 'En salida', ended: 'Terminado',
+    paid: 'Pagado', late: 'Atrasado', pending: 'Pendiente',
+    income: 'Ingresos mensuales', collected: 'Cobrado este mes',
+    occupied: 'Habitaciones ocupadas', delayed: 'Pagos atrasados',
+    location: 'LOCALIZACIÓN', alerts: 'ALERTAS', free: 'libre',
+    totalCobrado: 'Total cobrado', newFactura: '+ Nueva factura',
+    electricity: 'Electricidad', water: 'Agua', perPerson: 'PARTE POR PERSONA',
+    archiveInfo: 'El inquilino será archivado, no eliminado. Todos sus datos quedan guardados.',
+    settings: 'Configuración', language: 'IDIOMA / LANGUAGE / LANGUE',
+  },
+  en: {
+    dashboard: '⌂ Dashboard', rooms: '⊞ Rooms', tenants: '◎ Tenants',
+    payments: '◈ Payments', deposits: '⬡ Guarantees', facturas: '⚡ Bills',
+    cleaning: '✦ Cleaning', calendar: '◷ Calendar',
+    addTenant: '+ Add', editTenant: 'Edit tenant', newTenant: 'New tenant',
+    save: 'Save', cancel: 'Cancel', update: 'Update', delete: 'Delete',
+    archive: 'Archive', name: 'Full name', room: 'Room',
+    phone: 'Phone', email: 'Email', entryDate: 'Entry date',
+    exitDate: 'Exit date', rent: 'Monthly rent (€)', status: 'Status',
+    notes: 'Notes', active: 'Active', leaving: 'Leaving', ended: 'Ended',
+    paid: 'Paid', late: 'Late', pending: 'Pending',
+    income: 'Monthly income', collected: 'Collected this month',
+    occupied: 'Occupied rooms', delayed: 'Late payments',
+    location: 'LOCATION', alerts: 'ALERTS', free: 'free',
+    totalCobrado: 'Total collected', newFactura: '+ New bill',
+    electricity: 'Electricity', water: 'Water', perPerson: 'PER PERSON',
+    archiveInfo: 'The tenant will be archived, not deleted. All data is kept.',
+    settings: 'Settings', language: 'IDIOMA / LANGUAGE / LANGUE',
+  },
+  fr: {
+    dashboard: '⌂ Tableau de bord', rooms: '⊞ Chambres', tenants: '◎ Locataires',
+    payments: '◈ Paiements', deposits: '⬡ Garanties', facturas: '⚡ Factures',
+    cleaning: '✦ Nettoyage', calendar: '◷ Calendrier',
+    addTenant: '+ Ajouter', editTenant: 'Modifier locataire', newTenant: 'Nouveau locataire',
+    save: 'Enregistrer', cancel: 'Annuler', update: 'Mettre à jour', delete: 'Supprimer',
+    archive: 'Archiver', name: 'Nom complet', room: 'Chambre',
+    phone: 'Téléphone', email: 'Email', entryDate: 'Date d\'entrée',
+    exitDate: 'Date de sortie', rent: 'Loyer mensuel (€)', status: 'Statut',
+    notes: 'Notes', active: 'Actif', leaving: 'En départ', ended: 'Terminé',
+    paid: 'Payé', late: 'En retard', pending: 'En attente',
+    income: 'Revenus mensuels', collected: 'Encaissé ce mois',
+    occupied: 'Chambres occupées', delayed: 'Retards de paiement',
+    location: 'LOCALISATION', alerts: 'ALERTES', free: 'libre',
+    totalCobrado: 'Total encaissé', newFactura: '+ Nouvelle facture',
+    electricity: 'Électricité', water: 'Eau', perPerson: 'PART PAR PERSONNE',
+    archiveInfo: 'Le locataire sera archivé, pas supprimé. Toutes ses données sont conservées.',
+    settings: 'Paramètres', language: 'IDIOMA / LANGUAGE / LANGUE',
+  }
+};
+
+function t(key) { return TRANSLATIONS[currentLang]?.[key] || TRANSLATIONS['es'][key] || key; }
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('maynest-lang', lang);
+  // Update nav buttons
+  const tabs = ['dashboard','rooms','tenants','payments','deposits','facturas','cleaning','calendar'];
+  document.querySelectorAll('.nav-btn').forEach((b,i) => { b.textContent = t(tabs[i]); });
+  closeModal();
+  renderTab(currentTab);
+}
+
+function openSettings() {
+  const langs = [
+    { code: 'es', flag: '🇪🇸', label: 'Español' },
+    { code: 'en', flag: '🏴', label: 'EN — English' },
+    { code: 'fr', flag: '🇫🇷', label: 'Français' },
+  ];
+  openModal(t('settings'), `
+    <p style="font-size:11px;font-family:monospace;color:#8a9ab5;letter-spacing:0.1em;margin-bottom:12px">${t('language')}</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${langs.map(l => `
+        <div onclick="setLang('${l.code}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:${currentLang===l.code?'#1A2B4A':'#F8FAFD'};border-radius:10px;cursor:pointer;border:0.5px solid ${currentLang===l.code?'#1A2B4A':'#B5D4F4'}">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">${l.flag}</span>
+            <span style="font-size:13px;font-weight:500;color:${currentLang===l.code?'#fff':'#1A2B4A'}">${l.label}</span>
+          </div>
+          ${currentLang===l.code ? `<span style="color:#D4A843;font-size:11px;font-family:monospace">✓</span>` : ''}
+        </div>`).join('')}
+    </div>`);
+}
 
 function showTab(tab) {
   document.querySelectorAll('.nav-btn').forEach((b,i) => {
@@ -976,6 +1074,9 @@ function confirmDelete(id) {
 window.addEventListener('firebase-ready', () => {
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
+  // Apply saved language
+  const tabs = ['dashboard','rooms','tenants','payments','deposits','facturas','cleaning','calendar'];
+  document.querySelectorAll('.nav-btn').forEach((b,i) => { b.textContent = t(tabs[i]); });
   renderDashboard();
   updateFreeBadges();
   loadData();

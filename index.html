@@ -36,7 +36,7 @@
     .page-title { font-size: 1.6rem; font-weight: 700; font-style: italic; margin-bottom: 1.5rem; color: #0C447C; font-family: 'Cormorant Garamond', Georgia, serif; }
     .header { background: #1A2B4A; border-bottom: none; padding: 0.7rem 1rem; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(26,43,74,0.35); min-height: 60px; gap: 0.5rem; }
     .header-title { font-size: 1.2rem; font-weight: 600; font-style: italic; color: #FAF6F1; letter-spacing: 0.06em; font-family: 'Cormorant Garamond', Georgia, serif; white-space: nowrap; }
-    .header-sub { font-size: 0.6rem; color: #C9A96E; font-family: monospace; letter-spacing: 0.08em; white-space: nowrap; }
+    .header-sub { font-size: 0.6rem; color: #C9A96E; font-family: monospace; letter-spacing: 0.08em; white-space: nowrap; } @media (max-width:420px) { .header-sub { display:none; } }
     .header-logo-wrapper { display: flex; align-items: center; gap: 0.7rem; flex-shrink: 0; }
     .header-text-wrapper { border-left: 2px solid #C9A96E; padding-left: 0.7rem; }
     .free-badges { display: flex; align-items: center; flex-shrink: 0; }
@@ -483,7 +483,7 @@ function renderDashboard() {
   });
   const exits = tenants.filter(t => t.exitDate && daysUntil(t.exitDate)<=60 && t.status!=='ended');
 
-  let html = `<h1 class="page-title">Panel principal</h1>
+  let html = `<h1 class="page-title">${t("dashboard").replace("⌂ ","")}</h1>
   <div class="card-grid">
     <div class="kpi-card" style="border:0.5px solid #B5D4F4;border-left:4px solid #1A2B4A">
       <i class="ti ti-chart-bar" style="font-size:20px;color:#1A2B4A"></i>
@@ -510,19 +510,19 @@ function renderDashboard() {
   if (late.length > 0 || exits.length > 0) {
     html += `<div class="section-title">${t("alerts")}</div>`;
     late.forEach(p => {
-      const t = tenants.find(x => x.id===p.tenantId);
-      if (!t) return;
-      const r = roomById(t.room);
+      const ten = tenants.find(x => x.id===p.tenantId);
+      if (!ten) return;
+      const r = roomById(ten.room);
       html += `<div class="alert" style="background:var(--color-red)11;border:1px solid var(--color-red)44">
-        <span style="color:var(--color-red);font-size:0.88rem">⚠ ${t("lateAlert")} — <strong>${t.name}</strong> · ${r?.name||''}</span>
+        <span style="color:var(--color-red);font-size:0.88rem">⚠ ${t("lateAlert")} — <strong>${ten?.name||""}</strong> · ${r?.name||''}</span>
         <span style="color:var(--color-red);font-family:monospace;font-size:0.82rem">${p.amount||0} €</span>
       </div>`;
     });
-    exits.forEach(t => {
-      const d = daysUntil(t.exitDate);
+    exits.forEach(ten2 => {
+      const d = daysUntil(ten2.exitDate);
       html += `<div class="alert" style="background:var(--color-primary)11;border:1px solid var(--color-primary)44">
-        <span style="color:var(--color-primary);font-size:0.88rem">◷ ${t("exitAlert")} — <strong>${t.name}</strong></span>
-        <span style="color:var(--color-primary);font-family:monospace;font-size:0.82rem">en ${d}j</span>
+        <span style="color:var(--color-primary);font-size:0.88rem">◷ ${t("exitAlert")} — <strong>${ten2.name}</strong></span>
+        <span style="color:var(--color-primary);font-family:monospace;font-size:0.82rem">${t("inDays")} ${d}j</span>
       </div>`;
     });
   }
@@ -549,7 +549,7 @@ function renderDashboard() {
 }
 
 function renderRooms() {
-  let html = `<h1 class="page-title">Habitaciones</h1><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">`;
+  let html = `<h1 class="page-title">${t("rooms").replace("⊞ ","")}</h1><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">`;
   ROOMS.forEach((room, index) => {
     const tenant = tenants.find(t => t.room===room.id && t.status!=='ended');
     const gridStyle = (index===ROOMS.length-1 && ROOMS.length%2!==0) ? 'grid-column:1/3' : '';
@@ -566,7 +566,7 @@ function renderRooms() {
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
           <span style="font-size:10px;background:#2E7D8C18;color:#2E7D8C;padding:2px 7px;border-radius:10px">Activo</span>
           <div style="display:flex;gap:4px">
-            <button style="font-size:10px;background:transparent;color:${room.color};border:1px solid ${room.color}55;border-radius:8px;padding:2px 7px;cursor:pointer;font-family:monospace" onclick="openEditTenant('${tenant.id}')">Modificar</button>
+            <button style="font-size:10px;background:transparent;color:${room.color};border:1px solid ${room.color}55;border-radius:8px;padding:2px 7px;cursor:pointer;font-family:monospace" onclick="openEditTenant('${tenant.id}')">${t('modify')}</button>
             <button style="font-size:10px;background:transparent;color:#25D366;border:1px solid #25D36655;border-radius:8px;padding:2px 7px;cursor:pointer;font-family:monospace" onclick="openWhatsApp('${tenant.id}')">WA</button>
           </div>
         </div>`;
@@ -582,7 +582,7 @@ function renderRooms() {
 
 function renderTenants() {
   let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
-    <h1 class="page-title" style="margin:0">Inquilinos</h1>
+    <h1 class="page-title" style="margin:0">${t("tenants").replace("◎ ","")}</h1>
     <button class="btn btn-primary" onclick="openAddTenant('')">${t("addTenant")}</button>
   </div>`;
   if (!tenants.length) html += `<div style="text-align:center;color:#5B7FA6;padding:3rem;font-family:monospace">${t("noTenants")}</div>`;
@@ -647,10 +647,10 @@ function renderTenants() {
 function renderPayments() {
   const months = [...new Set(payments.map(p => p.month).filter(Boolean))].sort().reverse();
   if (!months.includes(currentMonth())) months.unshift(currentMonth());
-  let html = `<h1 class="page-title">Pagos</h1>`;
+  let html = `<h1 class="page-title">${t("payments").replace("◈ ","")}</h1>`;
   months.slice(0,3).forEach(month => {
     const [y,m] = month.split('-');
-    const label = new Date(y,m-1).toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+    const label = new Date(y,m-1).toLocaleDateString(currentLang==='en'?'en-US':currentLang==='fr'?'fr-FR':'es-ES',{month:'long',year:'numeric'});
     const monthPays = payments.filter(p => p.month===month);
     const total = monthPays.filter(p => p.status==='paid').reduce((s,p) => s+(p.amount||0), 0);
     html += `<div style="margin-bottom:2rem"><div class="section-title">${label.toUpperCase()}</div>`;
@@ -680,7 +680,7 @@ function renderDeposits() {
   const totalAdv = deposits.filter(d => d.advanceStatus==='held').reduce((s,d) => s+(d.advance||0), 0);
   const totalFia = deposits.filter(d => d.fianzaStatus==='held').reduce((s,d) => s+(d.fianza||0), 0);
 
-  let html = `<h1 class="page-title">Garantías</h1>
+  let html = `<h1 class="page-title">${t("deposits").replace("⬡ ","")}</h1>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
     <div style="background:#1A2B4A;border-radius:10px;padding:10px 8px;text-align:center">
       <div style="font-size:9px;color:rgba(255,255,255,0.6);font-family:monospace;margin-bottom:4px;letter-spacing:0.06em">${t("anticipos")}</div>
@@ -777,7 +777,7 @@ function renderFacturas() {
   const active = activeTenants();
 
   let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
-    <h1 class="page-title" style="margin:0">Facturas</h1>
+    <h1 class="page-title" style="margin:0">${t("facturas").replace("⚡ ","")}</h1>
     <button class="btn btn-primary" onclick="openNewFactura()">+ Nueva factura</button>
   </div>
 
@@ -796,7 +796,7 @@ function renderFacturas() {
 
   filtered.forEach(f => {
     const [y,m] = f.month.split('-');
-    const label = new Date(y,m-1).toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+    const label = new Date(y,m-1).toLocaleDateString(currentLang==='en'?'en-US':currentLang==='fr'?'fr-FR':'es-ES',{month:'long',year:'numeric'});
     const parPerson = active.length ? Math.round((f.amount / active.length) * 100) / 100 : 0;
     const pagados = (f.pagos||[]).filter(p => p.status==='paid').length;
     const totalCobrado = (f.pagos||[]).filter(p => p.status==='paid').length * parPerson;
@@ -913,8 +913,8 @@ function renderCleaning() {
   const zones = Object.keys(CLEAN_TASKS);
   const zoneColors = ['var(--color-orange)','var(--color-purple)'];
   const zoneIcons = ['🍳','🛋️'];
-  let html = `<h1 class="page-title">Calendario de Limpieza</h1>
-  <p style="font-size:0.82rem;color:var(--color-text-muted);font-family:monospace;margin-bottom:1.2rem">Rotación semanal — Cocina y Salón</p>
+  let html = `<h1 class="page-title">${t("cleanTitle")}</h1>
+  <p style="font-size:0.82rem;color:var(--color-text-muted);font-family:monospace;margin-bottom:1.2rem">${t("cleanSubtitle")}</p>
   <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;align-items:center">
     <button onclick="cleanWeekOffset--;renderCleaning()" style="background:var(--color-card);border:1px solid var(--color-border);color:#aaa;border-radius:8px;padding:0.4rem 0.9rem;cursor:pointer;font-family:monospace">‹</button>
     <div style="flex:1;text-align:center;font-family:monospace;font-size:0.85rem;color:var(--color-primary);background:var(--color-card);border:1px solid var(--color-border);border-radius:8px;padding:0.4rem">${label} <span style="color:#444">(sem. ${week})</span></div>
@@ -945,7 +945,7 @@ function renderCleaning() {
       });
       html += `<div style="margin-top:0.7rem;font-size:0.72rem;color:#444;font-family:monospace">${doneTasks}/${tasks.length} tareas completadas</div>`;
     } else {
-      html += `<div style="font-size:0.82rem;color:#444;font-style:italic">Sin inquilinos activos</div>`;
+      html += `<div style="font-size:0.82rem;color:#444;font-style:italic">${t('noActiveTenants')}</div>`;
     }
     html += `</div></div>`;
   });
@@ -961,7 +961,7 @@ async function toggleTask(zone, week, task) {
 }
 
 function renderCalendar() {
-  let html = `<h1 class="page-title">Calendario Entradas / Salidas</h1>`;
+  let html = `<h1 class="page-title">${t("calTitle")}</h1>`;
   const sorted = [...tenants].sort((a,b) => new Date(a.entryDate)-new Date(b.entryDate));
   sorted.forEach(t => {
     const r = roomById(t.room);
@@ -1101,7 +1101,7 @@ function openEtatLieux(tenantId) {
 function openWhatsApp(tenantId) {
   const t = tenants.find(x => x.id===tenantId);
   if (!t) return;
-  const mon = new Date().toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+  const mon = new Date().toLocaleDateString(currentLang==='en'?'en-US':currentLang==='fr'?'fr-FR':'es-ES',{month:'long',year:'numeric'});
   const bankInfo = { nom:'Ton Nom Complet', banque:'Nom de ta banque', iban:'ES00 0000 0000 0000' };
   const roomName = ROOMS.find(r => r.id===t.room)?.name||'';
   const msg = encodeURIComponent(`Hola ${t.name} 👋\n\nTu alquiler de ${t.rent}€ vence en ${mon}.\n\nTransferencia bancaria:\nNombre: ${bankInfo.nom}\nBanco: ${bankInfo.banque}\nIBAN: ${bankInfo.iban}\nImporte: ${t.rent} €\nConcepto: Alquiler ${mon} - ${roomName}\n\n¡Gracias! 🏠`);
@@ -1119,7 +1119,7 @@ async function uploadDoc(tenantId, input) {
   const reader = new FileReader();
   reader.onload = async (e) => {
     const existing = documents[tenantId]||[];
-    const newDoc = { id:'d_'+Date.now(), name:file.name, type:file.type, size:file.size, date:new Date().toLocaleDateString('es-ES'), data:e.target.result };
+    const newDoc = { id:'d_'+Date.now(), name:file.name, type:file.type, size:file.size, date:new Date().toLocaleDateString(currentLang==='en'?'en-US':currentLang==='fr'?'fr-FR':'es-ES'), data:e.target.result };
     const updated = [...existing, newDoc];
     documents[tenantId] = updated;
     await saveDocuments(tenantId, updated);

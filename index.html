@@ -39,7 +39,7 @@
     .header-sub { font-size: 0.6rem; color: #C9A96E; font-family: monospace; letter-spacing: 0.08em; white-space: nowrap; } @media (max-width:420px) { .header-sub { display:none; } }
     .header-logo-wrapper { display: flex; align-items: center; gap: 0.7rem; min-width: 0; flex-shrink: 1; }
     .header-text-wrapper { border-left: 2px solid #C9A96E; padding-left: 0.7rem; }
-    .free-badges { display: flex; align-items: center; flex-shrink: 0; max-width: 50%; overflow: hidden; }
+    .free-badges { display: flex; align-items: center; flex-shrink: 0; }
     .free-badge { font-size: 0.58rem; padding: 0.12rem 0.35rem; border-radius: 4px; font-family: monospace; background: transparent; color: #FAF6F1; border: 1px solid rgba(255,255,255,0.4); white-space: nowrap; }
     .nav { display: flex; border-bottom: 1.5px solid #c5d4e8; overflow-x: auto; scrollbar-width: none; background: #FFFFFF; box-shadow: 0 2px 8px rgba(26,43,74,0.06); }
     .nav::-webkit-scrollbar { display: none; }
@@ -464,16 +464,13 @@ function loadData(onTenantsReady) {
 function updateFreeBadges() {
   const occupied = activeTenants().map(t => t.room);
   const free = ROOMS.filter(r => !occupied.includes(r.id));
-  const freeLabel = currentLang === 'en' ? 'free' : 'libre';
   const el = document.getElementById('free-badges');
   if (free.length === 0) { el.innerHTML = ''; return; }
-  const showBadges = free.length <= 3; // au-delà, on montre juste le compteur pour éviter le débordement
-  const shortName = r => r.name.replace("Habitación","H.").replace("Room","R.").replace("Chambre","Ch.");
+  const label = currentLang === 'en' ? 'free' : (free.length>1?'libres':'libre');
   el.innerHTML = `
-    <div style="display:flex;flex-direction:row;gap:4px;align-items:center;flex-wrap:nowrap;overflow:hidden">
-      <span style="font-size:9px;color:#C9A96E;font-family:monospace;white-space:nowrap;margin-right:3px">${free.length} ${freeLabel}</span>
-      ${showBadges ? free.map(r => `<span style="font-size:9px;color:#FAF6F1;border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:2px 5px;font-family:monospace;white-space:nowrap">${shortName(r)}</span>`).join('') : ''}
-    </div>`;
+    <span style="display:inline-flex;align-items:center;gap:5px;background:#C9A96E;color:#1A2B4A;font-size:12px;font-weight:600;font-family:monospace;padding:5px 12px;border-radius:20px;white-space:nowrap">
+      <i class="ti ti-home" style="font-size:14px"></i> ${free.length} ${label}
+    </span>`;
 }
 
 function renderDashboard() {

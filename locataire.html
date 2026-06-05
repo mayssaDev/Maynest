@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MayNest — Mon espace</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#1A2B4A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MayNest">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #EEF2F8; color: #042C53; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    .header { background: #1A2B4A; padding: 0.8rem 1rem; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(26,43,74,0.35); }
+    .header-title { font-size: 1.15rem; font-weight: 600; font-style: italic; color: #FAF6F1; font-family: 'Cormorant Garamond', Georgia, serif; line-height: 1; }
+    .header-sub { font-size: 0.58rem; color: #C9A96E; font-family: monospace; letter-spacing: 0.08em; margin-top: 2px; }
+    .name-badge { background: #C9A96E; color: #1A2B4A; font-size: 0.72rem; font-weight: 700; font-family: monospace; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
+    .main { padding: 1rem; max-width: 480px; margin: 0 auto; padding-bottom: 90px; }
+    .card { background: #FFFFFF; border: 0.5px solid #B5D4F4; border-radius: 12px; padding: 0.9rem 1rem; margin-bottom: 0.7rem; box-shadow: 0 2px 8px rgba(26,43,74,0.06); }
+    .section-title { font-size: 0.65rem; font-family: monospace; color: #8a9ab5; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; }
+    .row { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; padding: 4px 0; }
+    .badge { font-size: 0.68rem; padding: 3px 9px; border-radius: 20px; font-family: monospace; white-space: nowrap; display: inline-block; font-weight: 600; }
+    .progress-bar { background: #EEF2F8; border-radius: 6px; height: 6px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 6px; transition: width 0.3s; background: #D4A843; }
+    .task-item { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; padding: 6px 4px; border-radius: 6px; }
+    .task-check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #999; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 0.5px solid #c5d4e8; display: flex; justify-content: space-around; padding: 8px 0 12px; z-index: 100; box-shadow: 0 -2px 12px rgba(26,43,74,0.08); }
+    .tab-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; color: #8a9ab5; flex: 1; }
+    .tab-btn.active { color: #1A2B4A; }
+    .tab-btn.active span { font-weight: 700; }
+    .tab-btn i { font-size: 20px; }
+    .tab-btn span { font-size: 0.62rem; font-family: monospace; }
+    .action-card { display: flex; align-items: center; gap: 10px; padding: 0.9rem 1rem; border-radius: 12px; cursor: pointer; text-decoration: none; margin-bottom: 0.7rem; }
+    #loading { position: fixed; inset: 0; background: #1A2B4A; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; z-index: 9999; }
+    .spinner { width: 40px; height: 40px; border: 3px solid rgba(201,169,110,0.3); border-top-color: #C9A96E; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(26,43,74,0.6); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-box { background: #fff; border-radius: 18px; width: 100%; max-width: 360px; padding: 1.5rem; }
+    .btn { padding: 0.6rem 1.1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: monospace; border: 1.5px solid; }
+  </style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <div style="color:#C9A96E;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.3rem;font-style:italic">MayNest</div>
+  <div style="color:rgba(201,169,110,0.6);font-family:monospace;font-size:0.72rem;letter-spacing:0.15em" id="loading-msg">Cargando...</div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:9px">
+      <div style="width:30px;height:30px;background:rgba(255,255,255,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="ti ti-home" style="color:#C9A96E;font-size:16px"></i>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="header-title">MayNest</div>
+          <button onclick="openSettings()" style="background:transparent;border:none;cursor:pointer;padding:0;line-height:1" aria-label="Langue"><i class="ti ti-language" style="font-size:13px;color:rgba(255,255,255,0.6)"></i></button>
+        </div>
+        <div class="header-sub" id="header-sub">MON ESPACE</div>
+      </div>
+    </div>
+    <span class="name-badge" id="name-badge">—</span>
+  </div>
+
+  <div class="main">
+    <div id="view"></div>
+  </div>
+
+  <div class="tabbar" id="tabbar">
+    <button class="tab-btn active" id="tab-accueil" onclick="showTab('accueil')"><i class="ti ti-home"></i><span>Accueil</span></button>
+    <button class="tab-btn" id="tab-paiements" onclick="showTab('paiements')"><i class="ti ti-cash"></i><span>Paiements</span></button>
+    <button class="tab-btn" id="tab-nettoyage" onclick="showTab('nettoyage')"><i class="ti ti-sparkles"></i><span>Nettoyage</span></button>
+    <button class="tab-btn" id="tab-contact" onclick="showTab('contact')"><i class="ti ti-message"></i><span>Contact</span></button>
+  </div>
+</div>
+
+<div id="modal" class="modal-overlay hidden">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyAP4S4IQFKLA0MGvzTDkhWYpnj3ETgd888",
+    authDomain: "application-maynest.firebaseapp.com",
+    projectId: "application-maynest",
+    storageBucket: "application-maynest.firebasestorage.app",
+    messagingSenderId: "1066253124114",
+    appId: "1:1066253124114:web:af8b4ab5df8b2a05b3cecb"
+  };
+  const firebaseApp = initializeApp(firebaseConfig);
+  const db = getFirestore(firebaseApp);
+  window.db = db;
+  window.dbFns = { collection, doc, setDoc, getDoc, onSnapshot };
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<script>
+// ====== À PERSONNALISER ======
+const OWNER_PHONE = '34600000000';   // ← ton numéro WhatsApp (format international, sans +)
+const BANK_INFO = {
+  nom: 'Ton Nom Complet',
+  banque: 'Nom de ta banque',
+  iban: 'ES00 0000 0000 0000'
+};
+// ==============================
+
+const ROOMS = [
+  { id: 'r1', name: 'Habitación 1', color: '#7D2340' },
+  { id: 'r2', name: 'Habitación 2', color: '#1A2B4A' },
+  { id: 'r3', name: 'Habitación 3', color: '#2E508C' },
+  { id: 'r4', name: 'Habitación 4', color: '#D4A843' },
+  { id: 'r5', name: 'Habitación 5', color: '#2E7D8C' },
+];
+const CLEAN_TASKS = {
+  'Cocina': ['Limpiar las superficies','Lavar los platos comunes','Limpiar el horno/microondas','Vaciar/limpiar el frigorífico','Barrer y lavar el suelo'],
+  'Salón': ['Aspirar/barrer','Quitar el polvo de los muebles','Limpiar los cristales','Vaciar las papeleras','Ordenar los espacios comunes'],
+};
+const ZONE_ICONS = { 'Cocina': '🍳', 'Salón': '🛋️' };
+
+const TENANT_ID = new URLSearchParams(location.search).get('id');
+let me = null, myPayments = [], myDeposit = null, facturas = [], cleaning = {}, myDocs = [], activeTenants = [];
+let currentTab = 'accueil';
+let currentLang = localStorage.getItem('maynest-tenant-lang') || 'fr';
+
+// ---------- Traductions ----------
+const T = {
+  fr: { space:'MON ESPACE', home:'Accueil', pay:'Paiements', clean:'Nettoyage', contact:'Contact',
+    rent:'Loyer', entry:'Entrée', exit:'Sortie', location:'LOCALISATION', maps:'Maps',
+    myTurn:'Mon tour', thisMonth:'LOYER — CE MOIS-CI', paid:'Payé', topay:'À payer', pending:'En attente',
+    bills:'MES FACTURES', elec:'Électricité', water:'Eau', deposit:'GARANTIES', held:'retenu',
+    topayBank:'POUR PAYER', amount:'Montant', myZone:'Ma zone', nextWeeks:'PROCHAINES SEMAINES',
+    rest:'repos', noTurn:"Ce n'est pas ton tour cette semaine", sendReceipt:'Envoyer un reçu',
+    receiptSub:'justificatif de virement, document…', writeOwner:'Écrire au propriétaire',
+    report:'Signaler un problème', reportSub:'fuite, panne, dégât…', week:'Semaine',
+    lang:'LANGUE', notFound:'Locataire introuvable', notFoundSub:"Ce lien n'est pas valide. Contacte ton propriétaire.",
+    docsSent:'Document envoyé ✓', noBills:'Aucune facture pour le moment', max:'Max 1.5 Mo',
+    tasksDone:'tâches faites', reportMsg:'Bonjour, je souhaite signaler un problème :', greetMsg:'Bonjour' },
+  es: { space:'MI ESPACIO', home:'Inicio', pay:'Pagos', clean:'Limpieza', contact:'Contacto',
+    rent:'Alquiler', entry:'Entrada', exit:'Salida', location:'LOCALIZACIÓN', maps:'Maps',
+    myTurn:'Mi turno', thisMonth:'ALQUILER — ESTE MES', paid:'Pagado', topay:'A pagar', pending:'Pendiente',
+    bills:'MIS FACTURAS', elec:'Electricidad', water:'Agua', deposit:'GARANTÍAS', held:'retenido',
+    topayBank:'PARA PAGAR', amount:'Importe', myZone:'Mi zona', nextWeeks:'PRÓXIMAS SEMANAS',
+    rest:'descanso', noTurn:'No es tu turno esta semana', sendReceipt:'Enviar un recibo',
+    receiptSub:'justificante, documento…', writeOwner:'Escribir al propietario',
+    report:'Reportar un problema', reportSub:'fuga, avería, daño…', week:'Semana',
+    lang:'IDIOMA', notFound:'Inquilino no encontrado', notFoundSub:'Este enlace no es válido. Contacta a tu propietario.',
+    docsSent:'Documento enviado ✓', noBills:'Sin facturas por ahora', max:'Máx 1.5 MB',
+    tasksDone:'tareas hechas', reportMsg:'Hola, quiero reportar un problema:', greetMsg:'Hola' },
+  en: { space:'MY SPACE', home:'Home', pay:'Payments', clean:'Cleaning', contact:'Contact',
+    rent:'Rent', entry:'Entry', exit:'Exit', location:'LOCATION', maps:'Maps',
+    myTurn:'My turn', thisMonth:'RENT — THIS MONTH', paid:'Paid', topay:'To pay', pending:'Pending',
+    bills:'MY BILLS', elec:'Electricity', water:'Water', deposit:'GUARANTEES', held:'held',
+    topayBank:'TO PAY', amount:'Amount', myZone:'My zone', nextWeeks:'NEXT WEEKS',
+    rest:'rest', noTurn:"It's not your turn this week", sendReceipt:'Send a receipt',
+    receiptSub:'transfer proof, document…', writeOwner:'Message the owner',
+    report:'Report a problem', reportSub:'leak, breakdown, damage…', week:'Week',
+    lang:'LANGUAGE', notFound:'Tenant not found', notFoundSub:'This link is not valid. Contact your landlord.',
+    docsSent:'Document sent ✓', noBills:'No bills yet', max:'Max 1.5 MB',
+    tasksDone:'tasks done', reportMsg:'Hello, I would like to report a problem:', greetMsg:'Hello' }
+};
+function t(k){ return (T[currentLang] && T[currentLang][k]) || T.fr[k] || k; }
+function locale(){ return currentLang==='en'?'en-US':currentLang==='es'?'es-ES':'fr-FR'; }
+
+// ---------- Helpers ----------
+function roomById(id){ return ROOMS.find(r=>r.id===id); }
+function fmtDate(d){ if(!d) return '—'; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+function currentMonth(){ return new Date().toISOString().slice(0,7); }
+function getWeek(){ const d=new Date(); return Math.ceil(((d-new Date(d.getFullYear(),0,1))/86400000 + new Date(d.getFullYear(),0,1).getDay()+1)/7); }
+function monthLabel(m){ const [y,mo]=m.split('-'); return new Date(y,mo-1).toLocaleDateString(locale(),{month:'long',year:'numeric'}); }
+
+// rotation : liste des locataires actifs triée par id (déterministe)
+function activeSorted(){ return activeTenants.filter(x=>x.status!=='ended'&&x.status!=='archived').sort((a,b)=>a.id.localeCompare(b.id)); }
+function myIndex(){ return activeSorted().findIndex(x=>x.id===TENANT_ID); }
+function zonesForWeek(week){
+  const a=activeSorted(), n=a.length, mi=myIndex();
+  if(!n||mi<0) return [];
+  return Object.keys(CLEAN_TASKS).filter((z,zi)=> ((week+zi)%n)===mi );
+}
+
+// ---------- Firebase ----------
+function loadData(){
+  const db=window.db, {collection,onSnapshot}=window.dbFns;
+  onSnapshot(collection(db,'tenants'), s=>{
+    activeTenants=s.docs.map(d=>d.data());
+    me=activeTenants.find(x=>x.id===TENANT_ID)||null;
+    if(!me){ showNotFound(); return; }
+    finishLoad(); render();
+  });
+  onSnapshot(collection(db,'payments'), s=>{ myPayments=s.docs.map(d=>d.data()).filter(p=>p.tenantId===TENANT_ID); render(); });
+  onSnapshot(collection(db,'deposits'), s=>{ const d=s.docs.find(x=>x.id===TENANT_ID); myDeposit=d?d.data():null; render(); });
+  onSnapshot(collection(db,'facturas'), s=>{ facturas=s.docs.map(d=>d.data()); render(); });
+  onSnapshot(collection(db,'cleaning'), s=>{ s.docs.forEach(d=>{ if(d.id==='data') cleaning=d.data(); }); render(); });
+  onSnapshot(collection(db,'documents'), s=>{ const d=s.docs.find(x=>x.id===TENANT_ID); myDocs=d?(d.data().files||[]):[]; render(); });
+}
+async function saveCleaning(){ await window.dbFns.setDoc(window.dbFns.doc(window.db,'cleaning','data'), cleaning); }
+async function saveDocs(files){ await window.dbFns.setDoc(window.dbFns.doc(window.db,'documents',TENANT_ID), { files }); }
+
+let loaded=false;
+function finishLoad(){ if(loaded) return; loaded=true; document.getElementById('loading').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); applyLang(); }
+
+function showNotFound(){
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('tabbar').classList.add('hidden');
+  document.getElementById('name-badge').textContent='?';
+  document.getElementById('view').innerHTML = `<div style="text-align:center;padding:3rem 1rem">
+    <i class="ti ti-alert-circle" style="font-size:48px;color:#7D2340"></i>
+    <div style="font-size:1.1rem;font-weight:700;color:#7D2340;margin-top:12px">${t('notFound')}</div>
+    <div style="font-size:0.85rem;color:#5B7FA6;margin-top:6px;line-height:1.5">${t('notFoundSub')}</div>
+  </div>`;
+}
+
+// ---------- Langue ----------
+function applyLang(){
+  document.getElementById('header-sub').textContent = t('space');
+  document.querySelector('#tab-accueil span').textContent = t('home');
+  document.querySelector('#tab-paiements span').textContent = t('pay');
+  document.querySelector('#tab-nettoyage span').textContent = t('clean');
+  document.querySelector('#tab-contact span').textContent = t('contact');
+  if(me) document.getElementById('name-badge').textContent = (me.name||'').split(' ')[0]||'—';
+}
+function setLang(l){ currentLang=l; localStorage.setItem('maynest-tenant-lang',l); closeModal(); applyLang(); render(); }
+function openSettings(){
+  const langs=[['fr','Français'],['es','Español'],['en','English']];
+  document.getElementById('modal-box').innerHTML = `
+    <div style="font-size:0.7rem;font-family:monospace;color:#8a9ab5;letter-spacing:0.1em;margin-bottom:12px">${t('lang')}</div>
+    ${langs.map(([c,l])=>`<div onclick="setLang('${c}')" style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;margin-bottom:8px;border-radius:10px;cursor:pointer;background:${currentLang===c?'#1A2B4A':'#F8FAFD'};border:0.5px solid ${currentLang===c?'#1A2B4A':'#B5D4F4'};color:${currentLang===c?'#fff':'#1A2B4A'};font-size:0.9rem;font-weight:500">${l}${currentLang===c?' <span style="color:#D4A843">✓</span>':''}</div>`).join('')}
+    <button class="btn" style="background:transparent;color:#1A2B4A;border-color:#1A2B4A;width:100%;margin-top:4px" onclick="closeModal()">OK</button>`;
+  document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal(){ document.getElementById('modal').classList.add('hidden'); }
+
+// ---------- Navigation ----------
+function showTab(tab){
+  currentTab=tab;
+  ['accueil','paiements','nettoyage','contact'].forEach(x=>document.getElementById('tab-'+x).classList.toggle('active',x===tab));
+  render();
+}
+function render(){
+  if(!me) return;
+  if(currentTab==='accueil') renderAccueil();
+  if(currentTab==='paiements') renderPaiements();
+  if(currentTab==='nettoyage') renderNettoyage();
+  if(currentTab==='contact') renderContact();
+}
+
+// ---------- Vues ----------
+function renderAccueil(){
+  const r=roomById(me.room);
+  const week=getWeek();
+  const myZones=zonesForWeek(week);
+  let cleanCard='';
+  if(myZones.length){
+    const zone=myZones[0];
+    const tasks=CLEAN_TASKS[zone];
+    const done=tasks.filter(tk=>cleaning[`${zone}-${week}-${tk}`]).length;
+    cleanCard=`<div class="card" style="border:0.5px solid #D4A84344;border-top:4px solid #D4A843;border-radius:12px" onclick="showTab('nettoyage')">
+      <div class="row" style="padding:0">
+        <span style="font-size:0.85rem;font-weight:700;color:#9A7520">${ZONE_ICONS[zone]||''} ${t('myTurn')}: ${zone}</span>
+        <span style="font-size:0.72rem;color:#9A7520;font-family:monospace;font-weight:700">${done}/${tasks.length}</span>
+      </div>
+      <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${(done/tasks.length)*100}%"></div></div>
+    </div>`;
+  } else {
+    cleanCard=`<div class="card" style="display:flex;align-items:center;gap:8px">
+      <i class="ti ti-sparkles" style="color:#8a9ab5;font-size:18px"></i>
+      <span style="font-size:0.82rem;color:#5B7FA6">${t('noTurn')}</span>
+    </div>`;
+  }
+  const ADRESSE="Calle de las Flores, 12, Almería, España";
+  document.getElementById('view').innerHTML = `
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="height:5px;background:${r?.color}"></div>
+      <div style="padding:0.9rem 1rem">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+          <i class="ti ti-bed" style="color:${r?.color};font-size:16px"></i>
+          <span style="font-weight:700;color:${r?.color};font-size:0.95rem">${r?.name||'—'}</span>
+        </div>
+        <div class="row" style="border-bottom:0.5px solid #EEF2F8;color:#5B7FA6;font-family:monospace"><span>${t('rent')}</span><span style="color:#1A2B4A;font-weight:700">${me.rent||0} €/mois</span></div>
+        <div class="row" style="border-bottom:0.5px solid #EEF2F8;color:#5B7FA6;font-family:monospace"><span>${t('entry')}</span><span style="color:#1A2B4A">${fmtDate(me.entryDate)}</span></div>
+        <div class="row" style="color:#5B7FA6;font-family:monospace"><span>${t('exit')}</span><span style="color:#1A2B4A">${fmtDate(me.exitDate)}</span></div>
+      </div>
+    </div>
+    ${cleanCard}
+    <a href="https://maps.google.com/?q=${encodeURIComponent(ADRESSE)}" target="_blank" style="text-decoration:none">
+      <div style="background:#1A2B4A;border-radius:12px;padding:0.8rem 1rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:0.7rem">
+        <div><div style="font-size:0.6rem;color:#C9A96E;font-family:monospace;letter-spacing:0.08em">${t('location')}</div><div style="font-size:0.82rem;color:#FAF6F1">Calle de las Flores, 12</div></div>
+        <i class="ti ti-map-pin" style="color:#C9A96E;font-size:20px"></i>
+      </div>
+    </a>`;
+}
+
+function renderPaiements(){
+  const mon=currentMonth();
+  const p=myPayments.find(x=>x.month===mon);
+  const isPaid = p && p.status==='paid';
+  const payColor = isPaid?'#2E7D8C':'#7D2340';
+  const payLabel = isPaid?t('paid'):(p&&p.status==='late'?t('topay'):t('pending'));
+  const active=activeSorted();
+
+  // Mes parts de factures (élec + eau) du mois courant
+  let billsHtml='';
+  const myBills = facturas.filter(f=>f.month===mon).sort((a,b)=>a.type.localeCompare(b.type));
+  if(!myBills.length){
+    billsHtml=`<div style="text-align:center;color:#8a9ab5;font-size:0.78rem;font-family:monospace;padding:8px">${t('noBills')}</div>`;
+  } else {
+    myBills.forEach((f,i)=>{
+      const part = active.length ? Math.round((f.amount/active.length)*100)/100 : 0;
+      const mine = (f.pagos||[]).find(x=>x.tenantId===TENANT_ID);
+      const paidB = mine && mine.status==='paid';
+      const isElec = f.type==='electricidad';
+      billsHtml+=`<div class="row" style="${i<myBills.length-1?'border-bottom:0.5px solid #EEF2F8':''}">
+        <span style="color:#1A2B4A"><i class="ti ${isElec?'ti-bolt':'ti-droplet'}" style="color:${isElec?'#D4A843':'#2E7D8C'};font-size:14px;vertical-align:-2px"></i> ${isElec?t('elec'):t('water')}</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="font-weight:700;font-family:monospace;color:#1A2B4A">${part} €</span><span class="badge" style="background:${paidB?'#2E7D8C18':'#7D234018'};color:${paidB?'#2E7D8C':'#7D2340'}">${paidB?t('paid'):t('topay')}</span></span>
+      </div>`;
+    });
+  }
+
+  document.getElementById('view').innerHTML = `
+    <div class="card" style="border-left:4px solid ${payColor};display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:0.6rem;color:#5B7FA6;font-family:monospace">${t('thisMonth')}</div>
+        <div style="font-size:1.3rem;font-weight:700;color:#1A2B4A">${me.rent||0} €</div>
+        <div style="font-size:0.65rem;color:#8a9ab5;font-family:monospace">${monthLabel(mon)}</div>
+      </div>
+      <span class="badge" style="background:${payColor}18;color:${payColor};font-size:0.75rem;padding:5px 13px">${isPaid?'<i class="ti ti-check" style="vertical-align:-1px"></i> ':''}${payLabel}</span>
+    </div>
+
+    <div class="card">
+      <div class="section-title">${t('bills')}</div>
+      ${billsHtml}
+    </div>
+
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:0.6rem;color:#5B7FA6;font-family:monospace">${t('deposit')}</div>
+      <div style="font-size:1.1rem;font-weight:700;color:#1A2B4A">${myDeposit?((myDeposit.advance||0)+(myDeposit.fianza||0)):0} €</div></div>
+      <span class="badge" style="background:#1A2B4A18;color:#1A2B4A">${t('held')}</span>
+    </div>
+
+    <div style="background:#1A2B4A;border-radius:12px;padding:0.9rem 1rem">
+      <div style="font-size:0.6rem;color:#C9A96E;font-family:monospace;letter-spacing:0.08em;margin-bottom:8px">${t('topayBank')}</div>
+      <div style="font-size:0.8rem;color:#FAF6F1;font-family:monospace;line-height:1.7">
+        IBAN : ${BANK_INFO.iban}<br>${BANK_INFO.nom}<br>${t('amount')} : ${me.rent||0} €
+      </div>
+    </div>`;
+}
+
+function renderNettoyage(){
+  const week=getWeek();
+  const myZones=zonesForWeek(week);
+  let html='';
+
+  if(myZones.length){
+    myZones.forEach(zone=>{
+      const tasks=CLEAN_TASKS[zone];
+      const done=tasks.filter(tk=>cleaning[`${zone}-${week}-${tk}`]).length;
+      html+=`<div class="card" style="border:0.5px solid #D4A84344;border-top:4px solid #D4A843;border-radius:12px">
+        <div class="row" style="padding:0;margin-bottom:6px">
+          <span style="font-size:0.85rem;font-weight:700;color:#9A7520">${ZONE_ICONS[zone]||''} ${t('myZone')}: ${zone}</span>
+          <span style="font-size:0.72rem;color:#9A7520;font-family:monospace;font-weight:700">${done}/${tasks.length}</span>
+        </div>
+        <div class="progress-bar" style="margin-bottom:8px"><div class="progress-fill" style="width:${(done/tasks.length)*100}%"></div></div>`;
+      tasks.forEach(task=>{
+        const ck=!!cleaning[`${zone}-${week}-${task}`];
+        html+=`<div class="task-item" onclick="toggleTask('${zone}',${week},'${task.replace(/'/g,"\\'")}')">
+          <div class="task-check" style="border-color:${ck?'#D4A843':'#999'};background:${ck?'#D4A843':'transparent'}">${ck?'<span style="color:#fff;font-size:11px;font-weight:900">✓</span>':''}</div>
+          <span style="font-size:0.82rem;color:${ck?'#9A7520':'#555'};text-decoration:${ck?'line-through':'none'}">${task}</span>
+        </div>`;
+      });
+      html+=`<div style="font-size:0.65rem;color:#8a9ab5;font-family:monospace;margin-top:6px">${done}/${tasks.length} ${t('tasksDone')}</div></div>`;
+    });
+  } else {
+    html+=`<div class="card" style="display:flex;align-items:center;gap:8px"><i class="ti ti-sparkles" style="color:#8a9ab5;font-size:18px"></i><span style="font-size:0.82rem;color:#5B7FA6">${t('noTurn')}</span></div>`;
+  }
+
+  // Aperçu prochaines semaines
+  let preview='';
+  for(let i=1;i<=4;i++){
+    const w=week+i;
+    const zs=zonesForWeek(w);
+    const label = zs.length ? zs.map(z=>`${ZONE_ICONS[z]||''} ${z}`).join(', ') : `— ${t('rest')}`;
+    preview+=`<div class="row" style="${i<4?'border-bottom:0.5px solid #EEF2F8':''};color:#1A2B4A"><span>${t('week')} ${w}</span><span style="color:#5B7FA6;font-family:monospace">${label}</span></div>`;
+  }
+  html+=`<div class="card"><div class="section-title">${t('nextWeeks')}</div>${preview}</div>`;
+
+  document.getElementById('view').innerHTML=html;
+}
+
+function renderContact(){
+  const greet=encodeURIComponent(`${t('greetMsg')} (${me.name}, ${roomById(me.room)?.name||''})`);
+  const reportMsg=encodeURIComponent(`${t('reportMsg')} (${me.name}, ${roomById(me.room)?.name||''})`);
+  let docsHtml='';
+  if(myDocs.length){
+    docsHtml=myDocs.slice(-3).reverse().map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:0.5px solid #EEF2F8;font-size:0.78rem;color:#1A2B4A"><i class="ti ti-file" style="color:#2E508C"></i> ${d.name}</div>`).join('');
+  }
+  document.getElementById('view').innerHTML = `
+    <label class="action-card" style="background:#fff;border:0.5px solid #B5D4F4;flex-direction:column;text-align:center;gap:5px;cursor:pointer">
+      <i class="ti ti-upload" style="font-size:24px;color:#1A2B4A"></i>
+      <div style="font-size:0.85rem;font-weight:700;color:#1A2B4A">${t('sendReceipt')}</div>
+      <div style="font-size:0.65rem;color:#8a9ab5;font-family:monospace">${t('receiptSub')}</div>
+      <input type="file" style="display:none" accept="*/*" onchange="uploadDoc(this)">
+      ${docsHtml?`<div style="width:100%;margin-top:6px">${docsHtml}</div>`:''}
+    </label>
+
+    <a class="action-card" style="background:#25D366" href="https://wa.me/${OWNER_PHONE}?text=${greet}" target="_blank">
+      <i class="ti ti-brand-whatsapp" style="font-size:20px;color:#0b3d1f"></i>
+      <span style="font-size:0.85rem;font-weight:700;color:#0b3d1f">${t('writeOwner')}</span>
+    </a>
+
+    <a class="action-card" style="background:#fff;border:0.5px solid #2E508C44;border-left:4px solid #2E508C;border-radius:12px" href="https://wa.me/${OWNER_PHONE}?text=${reportMsg}" target="_blank">
+      <i class="ti ti-alert-triangle" style="font-size:20px;color:#2E508C"></i>
+      <div><div style="font-size:0.85rem;font-weight:700;color:#2E508C">${t('report')}</div><div style="font-size:0.65rem;color:#8a9ab5;font-family:monospace">${t('reportSub')}</div></div>
+    </a>`;
+}
+
+// ---------- Actions ----------
+async function toggleTask(zone, week, task){
+  const key=`${zone}-${week}-${task}`;
+  cleaning[key]=!cleaning[key];
+  render();
+  await saveCleaning();
+}
+async function uploadDoc(input){
+  const file=input.files[0];
+  if(!file) return;
+  if(file.size>1.5*1024*1024){ alert(t('max')); input.value=''; return; }
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    const nd={ id:'d_'+Date.now(), name:file.name, type:file.type, size:file.size, date:new Date().toLocaleDateString(locale()), data:e.target.result };
+    myDocs=[...myDocs, nd];
+    await saveDocs(myDocs);
+    render();
+    alert(t('docsSent'));
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+// expose
+window.showTab=showTab; window.toggleTask=toggleTask; window.uploadDoc=uploadDoc;
+window.openSettings=openSettings; window.setLang=setLang; window.closeModal=closeModal;
+
+window.addEventListener('firebase-ready', ()=>{
+  if(!TENANT_ID){ showNotFound(); return; }
+  loadData();
+});
+</script>
+</body>
+</html>

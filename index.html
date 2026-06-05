@@ -468,8 +468,8 @@ function updateFreeBadges() {
   if (free.length === 0) { el.innerHTML = ''; return; }
   const label = currentLang === 'en' ? 'free' : (free.length>1?'libres':'libre');
   el.innerHTML = `
-    <span style="display:inline-flex;align-items:center;gap:5px;background:#C9A96E;color:#1A2B4A;font-size:12px;font-weight:600;font-family:monospace;padding:5px 12px;border-radius:20px;white-space:nowrap">
-      <i class="ti ti-home" style="font-size:14px"></i> ${free.length} ${label}
+    <span style="display:inline-flex;align-items:center;gap:4px;background:#C9A96E;color:#1A2B4A;font-size:10px;font-weight:600;font-family:monospace;padding:3px 9px;border-radius:20px;white-space:nowrap">
+      <i class="ti ti-home" style="font-size:12px"></i> ${free.length} ${label}
     </span>`;
 }
 

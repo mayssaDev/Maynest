@@ -37,9 +37,9 @@
     .header { background: #1A2B4A; border-bottom: none; padding: 0.7rem 1rem; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(26,43,74,0.35); min-height: 60px; gap: 0.5rem; }
     .header-title { font-size: 1.2rem; font-weight: 600; font-style: italic; color: #FAF6F1; letter-spacing: 0.06em; font-family: 'Cormorant Garamond', Georgia, serif; white-space: nowrap; }
     .header-sub { font-size: 0.6rem; color: #C9A96E; font-family: monospace; letter-spacing: 0.08em; white-space: nowrap; } @media (max-width:420px) { .header-sub { display:none; } }
-    .header-logo-wrapper { display: flex; align-items: center; gap: 0.7rem; flex-shrink: 0; }
+    .header-logo-wrapper { display: flex; align-items: center; gap: 0.7rem; min-width: 0; flex-shrink: 1; }
     .header-text-wrapper { border-left: 2px solid #C9A96E; padding-left: 0.7rem; }
-    .free-badges { display: flex; align-items: center; flex-shrink: 0; }
+    .free-badges { display: flex; align-items: center; flex-shrink: 0; max-width: 50%; overflow: hidden; }
     .free-badge { font-size: 0.58rem; padding: 0.12rem 0.35rem; border-radius: 4px; font-family: monospace; background: transparent; color: #FAF6F1; border: 1px solid rgba(255,255,255,0.4); white-space: nowrap; }
     .nav { display: flex; border-bottom: 1.5px solid #c5d4e8; overflow-x: auto; scrollbar-width: none; background: #FFFFFF; box-shadow: 0 2px 8px rgba(26,43,74,0.06); }
     .nav::-webkit-scrollbar { display: none; }
@@ -464,11 +464,15 @@ function loadData(onTenantsReady) {
 function updateFreeBadges() {
   const occupied = activeTenants().map(t => t.room);
   const free = ROOMS.filter(r => !occupied.includes(r.id));
-  const freeLabel = currentLang === 'fr' ? 'libre' : currentLang === 'en' ? 'free' : 'libre';
-  document.getElementById('free-badges').innerHTML = `
-    <div style="display:flex;flex-direction:row;gap:4px;align-items:center;flex-wrap:nowrap">
-      ${free.length > 0 ? `<span style="font-size:9px;color:#C9A96E;font-family:monospace;white-space:nowrap;margin-right:3px">${free.length} ${freeLabel}</span>` : ''}
-      ${free.map(r => `<span style="font-size:9px;color:#FAF6F1;border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:2px 5px;font-family:monospace;white-space:nowrap">${r.name.replace("Habitación","H.").replace("Room","R.").replace("Chambre","Ch.")}</span>`).join('')}
+  const freeLabel = currentLang === 'en' ? 'free' : 'libre';
+  const el = document.getElementById('free-badges');
+  if (free.length === 0) { el.innerHTML = ''; return; }
+  const showBadges = free.length <= 3; // au-delà, on montre juste le compteur pour éviter le débordement
+  const shortName = r => r.name.replace("Habitación","H.").replace("Room","R.").replace("Chambre","Ch.");
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:row;gap:4px;align-items:center;flex-wrap:nowrap;overflow:hidden">
+      <span style="font-size:9px;color:#C9A96E;font-family:monospace;white-space:nowrap;margin-right:3px">${free.length} ${freeLabel}</span>
+      ${showBadges ? free.map(r => `<span style="font-size:9px;color:#FAF6F1;border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:2px 5px;font-family:monospace;white-space:nowrap">${shortName(r)}</span>`).join('') : ''}
     </div>`;
 }
 
@@ -540,7 +544,7 @@ function renderDashboard() {
         </div>
       </div>
       <a href="https://maps.google.com/?q=${encodeURIComponent(ADRESSE)}" target="_blank" style="display:flex;align-items:center;gap:5px;background:#1A2B4A;color:#fff;padding:5px 12px;border-radius:20px;font-size:0.72rem;font-family:monospace;text-decoration:none;flex-shrink:0">
-        <i class="ti ti-external-link" style="font-size:13px"></i> Abrir Maps
+        <i class="ti ti-external-link" style="font-size:13px"></i> ${t("openMaps")}
       </a>
     </div>
     <iframe src="${MAPS_EMBED}" width="100%" height="220" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
@@ -564,15 +568,16 @@ function renderRooms() {
       html += `<div style="font-size:12px;font-weight:600;color:#042C53;margin-bottom:2px">${tenant.name.split(' ')[0]} ${tenant.name.split(' ')[1]?.[0]||''}.</div>
         <div style="font-size:11px;color:#5B7FA6;font-family:monospace;margin-bottom:4px">${tenant.rent} €/mois</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
-          <span style="font-size:10px;background:#2E7D8C18;color:#2E7D8C;padding:2px 7px;border-radius:10px">Activo</span>
+          <span style="font-size:10px;background:#2E7D8C18;color:#2E7D8C;padding:2px 7px;border-radius:10px">${t('active')}</span>
           <div style="display:flex;gap:4px">
             <button style="font-size:10px;background:transparent;color:${room.color};border:1px solid ${room.color}55;border-radius:8px;padding:2px 7px;cursor:pointer;font-family:monospace" onclick="openEditTenant('${tenant.id}')">${t('modify')}</button>
             <button style="font-size:10px;background:transparent;color:#25D366;border:1px solid #25D36655;border-radius:8px;padding:2px 7px;cursor:pointer;font-family:monospace" onclick="openWhatsApp('${tenant.id}')">WA</button>
           </div>
         </div>`;
     } else {
-      html += `<div style="font-size:11px;color:#2E7D8C;font-family:monospace;margin-bottom:8px">● Libre</div>
-        <button style="font-size:11px;background:${room.color};color:#fff;border:none;border-radius:10px;padding:4px 10px;cursor:pointer;font-family:monospace;font-weight:600" onclick="openAddTenant('${room.id}')">+ Añadir</button>`;
+      const libreLabel = currentLang === 'fr' ? 'Libre' : currentLang === 'en' ? 'Free' : 'Libre';
+      html += `<div style="font-size:11px;color:#2E7D8C;font-family:monospace;margin-bottom:8px">● ${libreLabel}</div>
+        <button style="font-size:11px;background:${room.color};color:#fff;border:none;border-radius:10px;padding:4px 10px;cursor:pointer;font-family:monospace;font-weight:600" onclick="openAddTenant('${room.id}')">${t('addTenant')}</button>`;
     }
     html += `</div></div>`;
   });
@@ -616,7 +621,7 @@ function renderTenants() {
       <div style="border-top:0.5px solid #EEF2F8;padding:10px 16px;background:#fff">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:11px;color:#5B7FA6;font-family:monospace"><i class="ti ti-folder" style="font-size:12px;vertical-align:-1px;color:#D4A843"></i> ${t("documents")} (${(documents[t.id]||[]).length})</span>
-          <label style="cursor:pointer;background:#1A2B4A;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;font-weight:600">+ Añadir<input type="file" style="display:none" accept="*/*" onchange="uploadDoc('${t.id}', this)"></label>
+          <label style="cursor:pointer;background:#1A2B4A;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-family:monospace;font-weight:600">${t('addDoc')}<input type="file" style="display:none" accept="*/*" onchange="uploadDoc('${t.id}', this)"></label>
         </div>
         ${(documents[t.id]||[]).length===0 ? `<div style="text-align:center;padding:8px;background:#F8FAFD;border-radius:8px;border:1px dashed #B5D4F4;color:#5B7FA6;font-size:11px;font-family:monospace">${t("noDocuments")}</div>` :
           (documents[t.id]||[]).map(doc => {
@@ -721,7 +726,7 @@ function renderDeposits() {
           <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-top:3px">${d.advancePaidDate ? fmtDate(d.advancePaidDate) : '—'}</div>
         </div>
         <div style="padding:10px 12px">
-          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">${t("fianzas").replace("S","")}</div>
+          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">${t("fianza")}</div>
           <div style="font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:3px">${d.fianza||0} €</div>
           ${depBadge(d.fianzaStatus)}
           <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-top:3px">${d.fianzaPaidDate ? fmtDate(d.fianzaPaidDate) : '—'}</div>
@@ -778,20 +783,20 @@ function renderFacturas() {
 
   let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
     <h1 class="page-title" style="margin:0">${t("facturas").replace("⚡ ","")}</h1>
-    <button class="btn btn-primary" onclick="openNewFactura()">+ Nueva factura</button>
+    <button class="btn btn-primary" onclick="openNewFactura()">${t("newFactura")}</button>
   </div>
 
   <div style="display:flex;gap:8px;margin-bottom:1.2rem">
     <button onclick="facturaFilter='electricidad';renderFacturas()" style="flex:1;background:${facturaFilter==='electricidad'?'#1A2B4A':'#fff'};color:${facturaFilter==='electricidad'?'#fff':'#1A2B4A'};border:1.5px solid #1A2B4A;border-radius:20px;padding:8px 12px;font-size:12px;font-family:monospace;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-      <i class="ti ti-bolt" style="font-size:14px"></i> Electricidad
+      <i class="ti ti-bolt" style="font-size:14px"></i> ${t("electricity")}
     </button>
     <button onclick="facturaFilter='agua';renderFacturas()" style="flex:1;background:${facturaFilter==='agua'?'#2E7D8C':'#fff'};color:${facturaFilter==='agua'?'#fff':'#2E7D8C'};border:1.5px solid #2E7D8C;border-radius:20px;padding:8px 12px;font-size:12px;font-family:monospace;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-      <i class="ti ti-droplet" style="font-size:14px"></i> Agua
+      <i class="ti ti-droplet" style="font-size:14px"></i> ${t("water")}
     </button>
   </div>`;
 
   if (!filtered.length) {
-    html += `<div style="text-align:center;color:#5B7FA6;padding:3rem;font-family:monospace">Sin facturas. Clique + Nueva factura !</div>`;
+    html += `<div style="text-align:center;color:#5B7FA6;padding:3rem;font-family:monospace">${t("noFacturas")}</div>`;
   }
 
   filtered.forEach(f => {
@@ -803,6 +808,7 @@ function renderFacturas() {
     const allPaid = pagados === active.length;
     const icon = f.type === 'electricidad' ? 'ti-bolt' : 'ti-droplet';
     const color = f.type === 'electricidad' ? '#D4A843' : '#2E7D8C';
+    const typeLabel = f.type==='electricidad'? t("electricity") : t("water");
 
     html += `<div style="background:#fff;border-radius:12px;overflow:hidden;margin-bottom:10px;border:0.5px solid #B5D4F4">
       <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #B5D4F4;background:#F8FAFD">
@@ -811,12 +817,12 @@ function renderFacturas() {
             <i class="ti ${icon}" style="font-size:18px;color:${color}"></i>
           </div>
           <div>
-            <div style="font-weight:600;font-size:13px;color:#1A2B4A">${f.type==='electricidad'?'Electricidad':'Agua'} — ${label}</div>
-            <div style="font-size:10px;color:#8a9ab5;font-family:monospace">Total: ${f.amount} € · ${active.length} inquilinos · ${parPerson} € c/u</div>
+            <div style="font-weight:600;font-size:13px;color:#1A2B4A">${typeLabel} — ${label}</div>
+            <div style="font-size:10px;color:#8a9ab5;font-family:monospace">Total: ${f.amount} € · ${active.length} · ${parPerson} € c/u</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:10px;background:${allPaid?'#2E7D8C18':'#D4A84318'};color:${allPaid?'#2E7D8C':'#9A7520'};padding:2px 8px;border-radius:10px;font-family:monospace">${pagados}/${active.length} Pagado</span>
+          <span style="font-size:10px;background:${allPaid?'#2E7D8C18':'#D4A84318'};color:${allPaid?'#2E7D8C':'#9A7520'};padding:2px 8px;border-radius:10px;font-family:monospace">${pagados}/${active.length} ${t("paid")}</span>
           <button onclick="deleteFacturaConfirm('${f.id}')" style="background:transparent;border:none;cursor:pointer;color:#7D2340"><i class="ti ti-trash" style="font-size:14px"></i></button>
         </div>
       </div>
@@ -834,8 +840,8 @@ function renderFacturas() {
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:12px;font-weight:600;color:#1A2B4A;font-family:monospace">${parPerson} €</span>
           ${isPaid
-            ? `<span style="font-size:10px;background:#2E7D8C18;color:#2E7D8C;padding:2px 8px;border-radius:10px;font-family:monospace">Pagado</span>`
-            : `<span style="font-size:10px;background:#7D234018;color:#7D2340;padding:2px 8px;border-radius:10px;font-family:monospace">Pendiente</span>
+            ? `<span style="font-size:10px;background:#2E7D8C18;color:#2E7D8C;padding:2px 8px;border-radius:10px;font-family:monospace">${t("paid")}</span>`
+            : `<span style="font-size:10px;background:#7D234018;color:#7D2340;padding:2px 8px;border-radius:10px;font-family:monospace">${t("pending")}</span>
                <button onclick="pagarFactura('${f.id}','${t.id}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:2px 8px;font-size:10px;font-family:monospace;cursor:pointer">✓</button>`
           }
         </div>
@@ -844,8 +850,8 @@ function renderFacturas() {
 
     html += `</div>
       <div style="padding:8px 14px;background:${allPaid?'#2E7D8C18':'#EEF2F8'};display:flex;justify-content:space-between">
-        <span style="font-size:10px;color:#5B7FA6;font-family:monospace">Cobrado: ${totalCobrado.toFixed(0)} € / ${f.amount} €</span>
-        <span style="font-size:10px;color:${allPaid?'#2E7D8C':'#7D2340'};font-family:monospace;font-weight:600">${allPaid?'✓ Completo':'Pendiente: '+(f.amount-totalCobrado).toFixed(0)+' €'}</span>
+        <span style="font-size:10px;color:#5B7FA6;font-family:monospace">${t("totalCobrado")}: ${totalCobrado.toFixed(0)} € / ${f.amount} €</span>
+        <span style="font-size:10px;color:${allPaid?'#2E7D8C':'#7D2340'};font-family:monospace;font-weight:600">${allPaid?'✓ '+t("complete"):t("pending")+': '+(f.amount-totalCobrado).toFixed(0)+' €'}</span>
       </div>
     </div>`;
   });
@@ -854,22 +860,22 @@ function renderFacturas() {
 }
 
 function openNewFactura() {
-  openModal('Nueva factura', `
-    <div class="form-group"><label class="form-label">Tipo</label>
+  openModal(t("newFactura").replace("+ ",""), `
+    <div class="form-group"><label class="form-label">${t("facturaType")}</label>
       <select class="form-select" id="fac-type">
-        <option value="electricidad">⚡ Electricidad</option>
-        <option value="agua">💧 Agua</option>
+        <option value="electricidad">⚡ ${t("electricity")}</option>
+        <option value="agua">💧 ${t("water")}</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">Mes (AAAA-MM)</label>
+    <div class="form-group"><label class="form-label">${t("facturaMonth")}</label>
       <input class="form-input" id="fac-month" value="${currentMonth()}">
     </div>
-    <div class="form-group"><label class="form-label">Importe total (€)</label>
+    <div class="form-group"><label class="form-label">${t("facturaAmount")}</label>
       <input class="form-input" type="number" id="fac-amount" placeholder="Ex: 120">
     </div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">
-      <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveNewFactura()">Guardar</button>
+      <button class="btn btn-outline-y" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveNewFactura()">${t("save")}</button>
     </div>`);
 }
 
@@ -897,18 +903,18 @@ async function pagarFactura(facturaId, tenantId) {
 
 function deleteFacturaConfirm(id) {
   const f = facturas.find(x => x.id===id);
-  const label = f?.type==='electricidad' ? 'Electricidad' : 'Agua';
-  openModal('Eliminar factura', `
-    <p style="color:#1A2B4A;margin-bottom:1.5rem;font-size:0.9rem;line-height:1.6">¿Eliminar factura <strong>${label} ${f?.month}</strong>? Esta acción es irreversible.</p>
+  const label = f?.type==='electricidad' ? t("electricity") : t("water");
+  openModal(t("deleteFacturaTitle"), `
+    <p style="color:#1A2B4A;margin-bottom:1.5rem;font-size:0.9rem;line-height:1.6">${t("deleteConfirm")} <strong>${label} ${f?.month}</strong> ? ${t("irreversible")}</p>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end">
-      <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
-      <button class="btn" style="background:var(--color-red);color:#fff;border-color:var(--color-red)" onclick="deleteFactura('${id}');closeModal()">Eliminar</button>
+      <button class="btn btn-outline-y" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn" style="background:var(--color-red);color:#fff;border-color:var(--color-red)" onclick="deleteFactura('${id}');closeModal()">${t("eliminar")}</button>
     </div>`);
 }
 
 function renderCleaning() {
   const week = getWeek() + cleanWeekOffset;
-  const label = cleanWeekOffset===0 ? 'Esta semana' : cleanWeekOffset===1 ? 'Semana próxima' : cleanWeekOffset===-1 ? 'Semana pasada' : `Sem. ${cleanWeekOffset>0?'+':''}${cleanWeekOffset}`;
+  const label = cleanWeekOffset===0 ? t("thisWeek") : cleanWeekOffset===1 ? t("nextWeek") : cleanWeekOffset===-1 ? t("lastWeek") : `Sem. ${cleanWeekOffset>0?'+':''}${cleanWeekOffset}`;
   const active = activeTenants();
   const zones = Object.keys(CLEAN_TASKS);
   const zoneColors = ['var(--color-orange)','var(--color-purple)'];
@@ -929,7 +935,7 @@ function renderCleaning() {
     const doneTasks = tasks.filter(t => cleaning[`${zone}-${week}-${t}`]).length;
     const allDone = doneTasks === tasks.length;
     html += `<div class="room-card" style="border:1px solid ${color}44"><div class="room-bar" style="background:${color}"></div><div class="room-body">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem"><div style="font-size:1.05rem;font-weight:700;color:${color}">${zoneIcons[zi]} ${zone}</div>${allDone ? badge('✓ Terminado','var(--color-green)') : ''}</div>`;
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem"><div style="font-size:1.05rem;font-weight:700;color:${color}">${zoneIcons[zi]} ${zone}</div>${allDone ? badge('✓ '+t("complete"),'var(--color-green)') : ''}</div>`;
     if (assigned) {
       html += `<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.8rem">
         <div class="tenant-avatar" style="width:28px;height:28px;background:${ar?.color}33;border:1.5px solid ${ar?.color};color:${ar?.color};font-size:0.85rem">${assigned.name[0]}</div>
@@ -943,7 +949,7 @@ function renderCleaning() {
           <span style="font-size:0.82rem;color:${done?color:'#888'};text-decoration:${done?'line-through':'none'}">${task}</span>
         </div>`;
       });
-      html += `<div style="margin-top:0.7rem;font-size:0.72rem;color:#444;font-family:monospace">${doneTasks}/${tasks.length} tareas completadas</div>`;
+      html += `<div style="margin-top:0.7rem;font-size:0.72rem;color:#444;font-family:monospace">${doneTasks}/${tasks.length} ${t("tasksCompleted")}</div>`;
     } else {
       html += `<div style="font-size:0.82rem;color:#444;font-style:italic">${t('noActiveTenants')}</div>`;
     }
@@ -967,13 +973,14 @@ function renderCalendar() {
     const r = roomById(t.room);
     const d = daysUntil(t.exitDate);
     const exitColor = d!==null&&d<=30 ? 'var(--color-red)' : d!==null&&d<=60 ? 'var(--color-primary)' : 'var(--color-text-muted)';
+    const dLabel = d!==null ? ` (${d>0?`${t("inDays")} ${d}j`:d===0?t("today"):t("expired")})` : '';
     html += `<div class="card" style="display:flex;gap:1rem;align-items:center">
       <div style="width:4px;border-radius:4px;align-self:stretch;background:${r?.color};flex-shrink:0"></div>
       <div style="flex:1">
         <div style="font-weight:600;margin-bottom:0.3rem">${t.name} <span style="font-weight:400;color:${r?.color};font-size:0.85rem">· ${r?.name||'—'}</span></div>
         <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
-          <span style="font-size:0.82rem;color:var(--color-green);font-family:monospace">↓ Entrada: ${fmtDate(t.entryDate)}</span>
-          <span style="font-size:0.82rem;color:${exitColor};font-family:monospace">↑ Salida: ${fmtDate(t.exitDate)}${d!==null?` (${d>0?`en ${d}j`:d===0?'hoy':'vencido'})`:''}
+          <span style="font-size:0.82rem;color:var(--color-green);font-family:monospace">↓ ${t("inEntry")}: ${fmtDate(t.entryDate)}</span>
+          <span style="font-size:0.82rem;color:${exitColor};font-family:monospace">↑ ${t("inExit")}: ${fmtDate(t.exitDate)}${dLabel}
           </span>
         </div>
       </div>
@@ -992,32 +999,32 @@ function openModal(title, bodyHtml) {
 function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
 function openAddTenant(roomId) {
-  openModal('Nuevo inquilino', tenantForm({id:'',name:'',room:roomId||'r1',phone:'',email:'',entryDate:'',exitDate:'',rent:'',status:'active',notes:''}, false));
+  openModal(t("newTenant"), tenantForm({id:'',name:'',room:roomId||'r1',phone:'',email:'',entryDate:'',exitDate:'',rent:'',status:'active',notes:''}, false));
 }
 function openEditTenant(id) {
   const t = tenants.find(x => x.id===id);
   if (!t) return;
-  openModal('Modificar inquilino', tenantForm(t, true));
+  openModal(TRANSLATIONS[currentLang].editTenant, tenantForm(t, true));
 }
-function tenantForm(t, isEdit) {
-  const roomOpts = ROOMS.map(r => `<option value="${r.id}" ${t.room===r.id?'selected':''}>${r.name}</option>`).join('');
-  const statusOpts = [['active','Activo'],['leaving','En salida'],['ended','Terminado']].map(([v,l]) => `<option value="${v}" ${t.status===v?'selected':''}>${l}</option>`).join('');
-  return `<div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="f-name" value="${t.name||''}"></div>
-    <div class="form-group"><label class="form-label">Habitación</label><select class="form-select" id="f-room">${roomOpts}</select></div>
+function tenantForm(tn, isEdit) {
+  const roomOpts = ROOMS.map(r => `<option value="${r.id}" ${tn.room===r.id?'selected':''}>${r.name}</option>`).join('');
+  const statusOpts = [['active',t('active')],['leaving',t('leaving')],['ended',t('ended')]].map(([v,l]) => `<option value="${v}" ${tn.status===v?'selected':''}>${l}</option>`).join('');
+  return `<div class="form-group"><label class="form-label">${t('name')}</label><input class="form-input" id="f-name" value="${tn.name||''}"></div>
+    <div class="form-group"><label class="form-label">${t('room')}</label><select class="form-select" id="f-room">${roomOpts}</select></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-phone" value="${t.phone||''}"></div>
-      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" value="${t.email||''}"></div>
+      <div class="form-group"><label class="form-label">${t('phone')}</label><input class="form-input" id="f-phone" value="${tn.phone||''}"></div>
+      <div class="form-group"><label class="form-label">${t('email')}</label><input class="form-input" id="f-email" value="${tn.email||''}"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Fecha de entrada</label><input class="form-input" type="date" id="f-entry" value="${t.entryDate||''}"></div>
-      <div class="form-group"><label class="form-label">Fecha de salida</label><input class="form-input" type="date" id="f-exit" value="${t.exitDate||''}"></div>
+      <div class="form-group"><label class="form-label">${t('entryDate')}</label><input class="form-input" type="date" id="f-entry" value="${tn.entryDate||''}"></div>
+      <div class="form-group"><label class="form-label">${t('exitDate')}</label><input class="form-input" type="date" id="f-exit" value="${tn.exitDate||''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Alquiler mensual (€)</label><input class="form-input" type="number" id="f-rent" value="${t.rent||''}"></div>
-    <div class="form-group"><label class="form-label">Estado</label><select class="form-select" id="f-status">${statusOpts}</select></div>
-    <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input form-textarea" id="f-notes">${t.notes||''}</textarea></div>
+    <div class="form-group"><label class="form-label">${t('rent')}</label><input class="form-input" type="number" id="f-rent" value="${tn.rent||''}"></div>
+    <div class="form-group"><label class="form-label">${t('status')}</label><select class="form-select" id="f-status">${statusOpts}</select></div>
+    <div class="form-group"><label class="form-label">${t('notes')}</label><textarea class="form-input form-textarea" id="f-notes">${tn.notes||''}</textarea></div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">
-      <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveTenantForm('${t.id}',${isEdit})">${isEdit?'Actualizar':'Guardar'}</button>
+      <button class="btn btn-outline-y" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-primary" onclick="saveTenantForm('${tn.id}',${isEdit})">${isEdit?t('update'):t('save')}</button>
     </div>`;
 }
 async function saveTenantForm(oldId, isEdit) {
@@ -1033,13 +1040,13 @@ async function saveTenantForm(oldId, isEdit) {
 function openPayment(tenantId) {
   const t = tenants.find(x => x.id===tenantId);
   if (!t) return;
-  const statusOpts = [['paid','Pagado'],['late','Atrasado'],['pending','Pendiente']].map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
-  openModal('Pago', `<div class="form-group"><label class="form-label">Mes (AAAA-MM)</label><input class="form-input" id="p-month" value="${currentMonth()}"></div>
-    <div class="form-group"><label class="form-label">Importe (€)</label><input class="form-input" type="number" id="p-amount" value="${t.rent||0}"></div>
-    <div class="form-group"><label class="form-label">Estado</label><select class="form-select" id="p-status">${statusOpts}</select></div>
+  const statusOpts = [['paid',TRANSLATIONS[currentLang].paid],['late',TRANSLATIONS[currentLang].late],['pending',TRANSLATIONS[currentLang].pending]].map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+  openModal(TRANSLATIONS[currentLang].paymentTitle, `<div class="form-group"><label class="form-label">${TRANSLATIONS[currentLang].month}</label><input class="form-input" id="p-month" value="${currentMonth()}"></div>
+    <div class="form-group"><label class="form-label">${TRANSLATIONS[currentLang].amount}</label><input class="form-input" type="number" id="p-amount" value="${t.rent||0}"></div>
+    <div class="form-group"><label class="form-label">${TRANSLATIONS[currentLang].status}</label><select class="form-select" id="p-status">${statusOpts}</select></div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">
-      <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-green" onclick="savePaymentForm('${tenantId}')">Guardar</button>
+      <button class="btn btn-outline-y" onclick="closeModal()">${TRANSLATIONS[currentLang].cancel}</button>
+      <button class="btn btn-green" onclick="savePaymentForm('${tenantId}')">${TRANSLATIONS[currentLang].save}</button>
     </div>`);
 }
 async function quickPay(tenantId, month) {
@@ -1059,27 +1066,28 @@ function openDeposit(tenantId) {
   const t = tenants.find(x => x.id===tenantId);
   if (!t) return;
   const d = deposits.find(x => x.tenantId===tenantId) || { tenantId, advance:t.rent||0, advanceStatus:'held', advancePaidDate:'', fianza:t.rent||0, fianzaStatus:'held', fianzaPaidDate:'', notes:'' };
-  const depOpts = s => [['held','Retenido'],['returned','Devuelto'],['partial','Parcial']].map(([v,l]) => `<option value="${v}" ${s===v?'selected':''}>${l}</option>`).join('');
-  openModal('Fianza & Garantía', `<div style="background:#EEF2F8;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.85rem;color:#1A2B4A;font-family:monospace;border:0.5px solid #B5D4F4">
-      Alquiler de referencia: <span style="color:#1A2B4A;font-weight:700">${t.rent||0} €</span>
+  const L = TRANSLATIONS[currentLang];
+  const depOpts = s => [['held',L.held],['returned',L.returned],['partial',L.partial]].map(([v,l]) => `<option value="${v}" ${s===v?'selected':''}>${l}</option>`).join('');
+  openModal(L.depositTitle, `<div style="background:#EEF2F8;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.85rem;color:#1A2B4A;font-family:monospace;border:0.5px solid #B5D4F4">
+      ${L.refRent}: <span style="color:#1A2B4A;font-weight:700">${t.rent||0} €</span>
     </div>
-    <div style="color:#1A2B4A;font-size:0.85rem;font-weight:700;margin-bottom:0.8rem">Mes de anticipo</div>
+    <div style="color:#1A2B4A;font-size:0.85rem;font-weight:700;margin-bottom:0.8rem">${L.mesAnticipo}</div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Importe (€)</label><input class="form-input" type="number" id="d-adv" value="${d.advance||0}"></div>
-      <div class="form-group"><label class="form-label">Fecha recibido</label><input class="form-input" type="date" id="d-advdate" value="${d.advancePaidDate||''}"></div>
+      <div class="form-group"><label class="form-label">${L.amount}</label><input class="form-input" type="number" id="d-adv" value="${d.advance||0}"></div>
+      <div class="form-group"><label class="form-label">${currentLang==='fr'?'Date reçue':currentLang==='en'?'Date received':'Fecha recibido'}</label><input class="form-input" type="date" id="d-advdate" value="${d.advancePaidDate||''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Estado avance</label><select class="form-select" id="d-advstatus">${depOpts(d.advanceStatus)}</select></div>
+    <div class="form-group"><label class="form-label">${L.advanceStatus}</label><select class="form-select" id="d-advstatus">${depOpts(d.advanceStatus)}</select></div>
     <div style="border-top:1px solid #B5D4F4;margin:1rem 0"></div>
-    <div style="color:#1A2B4A;font-size:0.85rem;font-weight:700;margin-bottom:0.8rem">Fianza</div>
+    <div style="color:#1A2B4A;font-size:0.85rem;font-weight:700;margin-bottom:0.8rem">${L.fianza}</div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Importe (€)</label><input class="form-input" type="number" id="d-fia" value="${d.fianza||0}"></div>
-      <div class="form-group"><label class="form-label">Fecha recibido</label><input class="form-input" type="date" id="d-fiadate" value="${d.fianzaPaidDate||''}"></div>
+      <div class="form-group"><label class="form-label">${L.amount}</label><input class="form-input" type="number" id="d-fia" value="${d.fianza||0}"></div>
+      <div class="form-group"><label class="form-label">${currentLang==='fr'?'Date reçue':currentLang==='en'?'Date received':'Fecha recibido'}</label><input class="form-input" type="date" id="d-fiadate" value="${d.fianzaPaidDate||''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Estado caución</label><select class="form-select" id="d-fiastatus">${depOpts(d.fianzaStatus)}</select></div>
-    <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input form-textarea" id="d-notes">${d.notes||''}</textarea></div>
+    <div class="form-group"><label class="form-label">${L.depositStatus}</label><select class="form-select" id="d-fiastatus">${depOpts(d.fianzaStatus)}</select></div>
+    <div class="form-group"><label class="form-label">${L.notes}</label><textarea class="form-input form-textarea" id="d-notes">${d.notes||''}</textarea></div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end;margin-top:0.5rem">
-      <button class="btn btn-outline-y" onclick="closeModal()">Cancelar</button>
-      <button class="btn" style="background:#1A2B4A;color:#fff;border-color:#1A2B4A;border-radius:20px" onclick="saveDepositForm('${tenantId}')">Guardar</button>
+      <button class="btn btn-outline-y" onclick="closeModal()">${L.cancel}</button>
+      <button class="btn" style="background:#1A2B4A;color:#fff;border-color:#1A2B4A;border-radius:20px" onclick="saveDepositForm('${tenantId}')">${L.save}</button>
     </div>`);
 }
 async function saveDepositForm(tenantId) {
@@ -1090,12 +1098,13 @@ async function saveDepositForm(tenantId) {
 function openEtatLieux(tenantId) {
   const t = tenants.find(x => x.id===tenantId);
   if (!t) return;
-  openModal('Estado de la vivienda', `<div style="background:#EEF2F8;border-radius:10px;padding:1.2rem;margin-bottom:1rem;border:0.5px solid #B5D4F4">
-      <div style="font-size:0.75rem;font-family:monospace;color:#5B7FA6;margin-bottom:0.5rem">NOTAS DE ESTADO</div>
-      <div style="color:#1A2B4A;line-height:1.6;font-size:0.9rem">${t.etatLieux||'Sin notas registradas.'}</div>
+  const L = TRANSLATIONS[currentLang];
+  openModal(L.estadoTitle, `<div style="background:#EEF2F8;border-radius:10px;padding:1.2rem;margin-bottom:1rem;border:0.5px solid #B5D4F4">
+      <div style="font-size:0.75rem;font-family:monospace;color:#5B7FA6;margin-bottom:0.5rem">${L.statusNotes}</div>
+      <div style="color:#1A2B4A;line-height:1.6;font-size:0.9rem">${t.etatLieux||L.noNotes}</div>
     </div>
-    <div style="font-size:0.78rem;color:#5B7FA6;font-family:monospace">Entrada: ${fmtDate(t.entryDate)} · ${t("exitAlert")}: ${fmtDate(t.exitDate)}</div>
-    <div style="display:flex;justify-content:flex-end;margin-top:1rem"><button class="btn btn-outline-y" onclick="closeModal()">Cerrar</button></div>`);
+    <div style="font-size:0.78rem;color:#5B7FA6;font-family:monospace">${L.entry}: ${fmtDate(t.entryDate)} · ${L.exitPrev}: ${fmtDate(t.exitDate)}</div>
+    <div style="display:flex;justify-content:flex-end;margin-top:1rem"><button class="btn btn-outline-y" onclick="closeModal()">${L.close}</button></div>`);
 }
 
 function openWhatsApp(tenantId) {
@@ -1107,8 +1116,8 @@ function openWhatsApp(tenantId) {
   const msg = encodeURIComponent(`Hola ${t.name} 👋\n\nTu alquiler de ${t.rent}€ vence en ${mon}.\n\nTransferencia bancaria:\nNombre: ${bankInfo.nom}\nBanco: ${bankInfo.banque}\nIBAN: ${bankInfo.iban}\nImporte: ${t.rent} €\nConcepto: Alquiler ${mon} - ${roomName}\n\n¡Gracias! 🏠`);
   openModal('Recordatorio alquiler', `<div style="background:#EEF2F8;border-radius:10px;padding:1.2rem;margin-bottom:1rem;font-size:0.85rem;color:#1A2B4A;line-height:1.8;white-space:pre-wrap;border:0.5px solid #B5D4F4">Hola ${t.name} 👋\n\nTu alquiler de ${t.rent}€ vence en ${mon}.\n\nTransferencia bancaria:\nNombre: ${bankInfo.nom}\nBanco: ${bankInfo.banque}\nIBAN: ${bankInfo.iban}\nImporte: ${t.rent} €\nConcepto: Alquiler ${mon} - ${roomName}</div>
     <div style="display:flex;gap:0.8rem;justify-content:flex-end">
-      <button class="btn btn-outline-y" onclick="closeModal()">Cerrar</button>
-      <a href="https://wa.me/${t.phone?.replace(/\D/g,'')}?text=${msg}" target="_blank"><button class="whatsapp-btn">📱 Enviar WhatsApp</button></a>
+      <button class="btn btn-outline-y" onclick="closeModal()">${t("close")}</button>
+      <a href="https://wa.me/${t.phone?.replace(/\D/g,'')}?text=${msg}" target="_blank"><button class="whatsapp-btn">📱 ${t("send")}</button></a>
     </div>`);
 }
 
@@ -1164,8 +1173,7 @@ window.addEventListener('firebase-ready', () => {
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   // Apply saved language
-  const tabs = ['dashboard','rooms','tenants','payments','deposits','facturas','cleaning','calendar'];
-  document.querySelectorAll('.nav-btn').forEach((b,i) => { b.textContent = t(tabs[i]); });
+  setLang(currentLang);
   renderDashboard();
   updateFreeBadges();
   loadData();

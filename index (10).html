@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>MayNest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <meta name="theme-color" content="#1A2B4A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MayNest">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', ()=>{
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#1A2B4A"/><polygon points="80,270 256,110 432,270" fill="#C9A96E"/><rect x="120" y="265" width="272" height="175" rx="8" fill="#FAF6F1"/><rect x="155" y="310" width="70" height="65" rx="6" fill="#1A2B4A" opacity="0.5"/><rect x="290" y="310" width="70" height="65" rx="6" fill="#1A2B4A" opacity="0.5"/><rect x="215" y="340" width="82" height="100" rx="8" fill="#C9A96E"/></svg>`;
+        const blob = new Blob([svg], {type:'image/svg+xml'});
+        const url = URL.createObjectURL(blob);
+        const manifest = {
+          name: 'MayNest',
+          short_name: 'MayNest',
+          description: 'Gestion locative coliving',
+          start_url: '/Maynest/',
+          display: 'standalone',
+          background_color: '#1A2B4A',
+          theme_color: '#1A2B4A',
+          icons: [
+            { src: url, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+          ]
+        };
+        const mBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+        const mUrl = URL.createObjectURL(mBlob);
+        const link = document.createElement('link');
+        link.rel = 'manifest'; link.href = mUrl;
+        document.head.appendChild(link);
+      });
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #EEF2F8;
+      --card: #FFFFFF;
+      --border: #D8E5F4;
+      --navy: #1A2B4A;
+      --gold: #C9A96E;
+      --teal: #2E7D8C;
+      --crimson: #7D2340;
+      --purple: #2E508C;
+      --amber: #D4A843;
+      --text: #042C53;
+      --muted: #6B87A8;
+      --p1: #7D2340; --p2: #1A2B4A; --p3: #2E508C; --p4: #D4A843; --p5: #2E7D8C;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+    /* ── LOADING ── */
+    #loading { position: fixed; inset: 0; background: var(--navy); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1.2rem; z-index: 9999; }
+    .spinner { width: 44px; height: 44px; border: 3px solid rgba(201,169,110,0.25); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--navy);
+      padding: 0.6rem 1rem 0.6rem;
+      padding-top: calc(0.6rem + env(safe-area-inset-top));
+      position: sticky; top: 0; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 2px 16px rgba(26,43,74,0.4);
+      min-height: 56px;
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header-title { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 600; font-style: italic; color: #FAF6F1; letter-spacing: 0.04em; }
+    .header-sub { font-size: 0.58rem; color: var(--gold); font-family: monospace; letter-spacing: 0.1em; margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .icon-btn { background: rgba(255,255,255,0.08); border: none; border-radius: 8px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: rgba(255,255,255,0.8); flex-shrink: 0; }
+    .icon-btn:active { background: rgba(255,255,255,0.15); }
+
+    /* ── FREE BADGES ── */
+    #header-free { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; max-width: 160px; }
+    .hbadge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: rgba(255,255,255,0.75); border: 1px solid rgba(255,255,255,0.25); white-space: nowrap; }
+    .hbadge.free-count { color: var(--gold); border-color: var(--gold); }
+
+    /* ── TOP NAV (scroll) ── */
+    .top-nav {
+      display: flex; overflow-x: auto; scrollbar-width: none;
+      background: var(--navy);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 0 0.5rem;
+      position: sticky; top: 56px; z-index: 99;
+    }
+    .top-nav::-webkit-scrollbar { display: none; }
+    .tnav-btn {
+      flex: 0 0 auto; padding: 0.65rem 1rem;
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: rgba(255,255,255,0.5); cursor: pointer; font-size: 0.7rem; font-family: monospace;
+      white-space: nowrap; transition: color 0.15s; letter-spacing: 0.05em;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .tnav-btn i { font-size: 14px; }
+    .tnav-btn.active { color: #fff; border-bottom-color: var(--gold); }
+
+    /* ── MAIN CONTENT ── */
+    .main { padding: 1rem 1rem 2rem; max-width: 680px; margin: 0 auto; }
+
+    /* ── CARDS ── */
+    .card { background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; padding: 1rem 1.1rem; margin-bottom: 0.75rem; box-shadow: 0 1px 6px rgba(26,43,74,0.05); }
+    .card-action { cursor: pointer; transition: box-shadow 0.15s; }
+    .card-action:active { box-shadow: 0 4px 16px rgba(26,43,74,0.14); }
+
+    /* ── KPI GRID ── */
+    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1rem; }
+    .kpi { background: var(--card); border-radius: 14px; padding: 0.9rem 1rem; border: 0.5px solid var(--border); box-shadow: 0 1px 6px rgba(26,43,74,0.05); }
+    .kpi-icon { font-size: 18px; margin-bottom: 6px; }
+    .kpi-val { font-size: 1.35rem; font-weight: 800; line-height: 1.1; }
+    .kpi-lbl { font-size: 0.65rem; color: var(--muted); font-family: monospace; margin-top: 3px; }
+
+    /* ── SECTION LABEL ── */
+    .sec { font-size: 0.65rem; font-family: monospace; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin: 1.1rem 0 0.5rem; }
+
+    /* ── ALERT STRIP ── */
+    .alert-strip { border-radius: 10px; padding: 0.65rem 0.9rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap { background: #EEF2F8; border-radius: 6px; height: 5px; overflow: hidden; margin: 0.4rem 0; }
+    .progress-fill { height: 100%; border-radius: 6px; transition: width 0.4s; }
+
+    /* ── BADGE ── */
+    .badge { font-size: 0.65rem; padding: 0.15rem 0.5rem; border-radius: 20px; font-family: monospace; white-space: nowrap; display: inline-block; font-weight: 600; }
+
+    /* ── AVATAR ── */
+    .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 700; flex-shrink: 0; }
+
+    /* ── BUTTONS ── */
+    .btn { padding: 0.55rem 1.1rem; border-radius: 20px; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: monospace; letter-spacing: 0.03em; border: 1.5px solid; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+    .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.72rem; border-radius: 20px; font-weight: 700; cursor: pointer; font-family: monospace; border: 1.5px solid; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-navy { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .btn-teal { background: var(--teal); color: #fff; border-color: var(--teal); }
+    .btn-ghost { background: transparent; color: var(--navy); border-color: var(--border); }
+    .btn-ghost-r { background: transparent; color: var(--crimson); border-color: rgba(125,35,64,0.3); }
+    .btn:active { opacity: 0.8; }
+
+    /* ── FORM ── */
+    .form-group { margin-bottom: 0.9rem; }
+    .form-label { display: block; color: var(--muted); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; font-family: monospace; }
+    .form-input, .form-select, .form-textarea { width: 100%; background: #F4F7FC; border: 1.5px solid var(--border); border-radius: 10px; padding: 0.6rem 0.85rem; color: var(--text); font-size: 0.95rem; outline: none; font-family: inherit; transition: border-color 0.15s; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--navy); background: #fff; box-shadow: 0 0 0 3px rgba(26,43,74,0.08); }
+    .form-textarea { resize: vertical; min-height: 70px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+
+    /* ── MODAL ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(10,20,45,0.65); backdrop-filter: blur(5px); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; padding: 0; }
+    @media (min-width: 500px) { .modal-overlay { align-items: center; padding: 1rem; } }
+    .modal-box { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; padding: 1.5rem 1.3rem 2rem; box-shadow: 0 -10px 40px rgba(26,43,74,0.2); }
+    @media (min-width: 500px) { .modal-box { border-radius: 20px; } }
+    .modal-handle { width: 36px; height: 4px; background: #d8e0ec; border-radius: 2px; margin: 0 auto 1.2rem; }
+    @media (min-width: 500px) { .modal-handle { display: none; } }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+    .modal-title { font-size: 0.72rem; font-weight: 700; color: var(--navy); font-family: monospace; letter-spacing: 0.1em; text-transform: uppercase; }
+    .modal-close { background: #EEF2F8; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 1rem; }
+
+    /* ── TENANT CARD ── */
+    .tenant-card { background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; margin-bottom: 0.75rem; overflow: hidden; box-shadow: 0 1px 6px rgba(26,43,74,0.05); }
+    .tenant-main { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+    .tenant-info { flex: 1; min-width: 0; }
+    .tenant-name { font-weight: 700; font-size: 15px; color: var(--navy); }
+    .tenant-sub { font-size: 11px; color: var(--muted); font-family: monospace; margin-top: 2px; }
+    .tenant-actions { display: flex; gap: 6px; padding: 8px 14px 10px; flex-wrap: wrap; border-top: 0.5px solid #F0F4FA; background: #FAFCFF; }
+
+    /* ── ROOM SECTION ── */
+    .room-block { background: var(--card); border-radius: 14px; overflow: hidden; margin-bottom: 10px; border: 0.5px solid var(--border); box-shadow: 0 1px 6px rgba(26,43,74,0.05); }
+    .room-header { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid #F0F4FA; }
+    .room-beds { display: grid; gap: 8px; padding: 10px 14px 12px; }
+    .bed-card { border-radius: 10px; padding: 10px 12px; border: 0.5px solid; }
+    .bed-free { border-style: dashed; background: #FAFCFF; }
+
+    /* ── PAYMENT ROW ── */
+    .pay-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid #F0F4FA; }
+    .pay-row:last-child { border-bottom: none; }
+
+    /* ── WHATSAPP ── */
+    .wa-btn { background: #25D366; color: #fff; border: none; border-radius: 20px; padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; font-family: monospace; display: inline-flex; align-items: center; gap: 5px; }
+
+    /* ── TASK ITEM ── */
+    .task-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: background 0.12s; }
+    .task-item:active { background: rgba(0,0,0,0.04); }
+    .task-check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #ccc; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    .hidden { display: none !important; }
+    .page-title { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 600; font-style: italic; color: var(--navy); margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="spinner"></div>
+  <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-style:italic;color:var(--gold);letter-spacing:0.1em">MayNest</div>
+  <div style="font-family:monospace;font-size:0.68rem;color:rgba(201,169,110,0.5);letter-spacing:0.15em">Connexion...</div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <svg width="34" height="34" viewBox="0 0 44 44">
+        <rect width="44" height="44" fill="rgba(255,255,255,0.08)" rx="10"/>
+        <rect x="11" y="23" width="22" height="15" fill="#FAF6F1" rx="1.5"/>
+        <polygon points="8,23 22,10 36,23" fill="#C9A96E"/>
+        <rect x="15" y="27" width="5" height="5" fill="#1A2B4A" rx="1" opacity="0.6"/>
+        <rect x="24" y="27" width="5" height="5" fill="#1A2B4A" rx="1" opacity="0.6"/>
+        <rect x="19.5" y="30" width="5" height="8" fill="#C9A96E" rx="1"/>
+      </svg>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="header-title">MayNest</div>
+        </div>
+        <div class="header-sub" id="header-sub">GESTION LOCATIVE · 11 LITS</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div id="header-free"></div>
+      <button class="icon-btn" onclick="openSettings()"><i class="ti ti-settings" style="font-size:17px"></i></button>
+    </div>
+  </div>
+
+  <!-- TOP NAV -->
+  <nav class="top-nav">
+    <button class="tnav-btn active" onclick="showTab('dashboard')" id="tnav-dashboard"><i class="ti ti-layout-dashboard"></i>Panel</button>
+    <button class="tnav-btn" onclick="showTab('rooms')" id="tnav-rooms"><i class="ti ti-door"></i>Lits</button>
+    <button class="tnav-btn" onclick="showTab('tenants')" id="tnav-tenants"><i class="ti ti-users"></i>Locataires</button>
+    <button class="tnav-btn" onclick="showTab('payments')" id="tnav-payments"><i class="ti ti-coin-euro"></i>Paiements</button>
+    <button class="tnav-btn" onclick="showTab('deposits')" id="tnav-deposits"><i class="ti ti-shield"></i>Garanties</button>
+    <button class="tnav-btn" onclick="showTab('facturas')" id="tnav-facturas"><i class="ti ti-bolt"></i>Factures</button>
+    <button class="tnav-btn" onclick="showTab('cleaning')" id="tnav-cleaning"><i class="ti ti-sparkles"></i>Nettoyage</button>
+    <button class="tnav-btn" onclick="showTab('calendar')" id="tnav-calendar"><i class="ti ti-calendar"></i>Calendrier</button>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div id="tab-dashboard"></div>
+    <div id="tab-rooms" class="hidden"></div>
+    <div id="tab-tenants" class="hidden"></div>
+    <div id="tab-payments" class="hidden"></div>
+    <div id="tab-deposits" class="hidden"></div>
+    <div id="tab-facturas" class="hidden"></div>
+    <div id="tab-cleaning" class="hidden"></div>
+    <div id="tab-calendar" class="hidden"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal-overlay hidden" onclick="handleOverlayClick(event)">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title"></div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  const cfg = {
+    apiKey:"AIzaSyAP4S4IQFKLA0MGvzTDkhWYpnj3ETgd888",
+    authDomain:"application-maynest.firebaseapp.com",
+    projectId:"application-maynest",
+    storageBucket:"application-maynest.firebasestorage.app",
+    messagingSenderId:"1066253124114",
+    appId:"1:1066253124114:web:af8b4ab5df8b2a05b3cecb"
+  };
+  window.db = getFirestore(initializeApp(cfg));
+  window.dbFns = { collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot };
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<script>
+// ═══════════════════════════════════════
+// DATA MODEL
+// ═══════════════════════════════════════
+const PIECES = [
+  { id:'p1', name:'Habitación 1', color:'#7D2340', lits:2, loyer:200 },
+  { id:'p2', name:'Habitación 2', color:'#1A2B4A', lits:2, loyer:175 },
+  { id:'p3', name:'Habitación 3', color:'#2E508C', lits:2, loyer:175 },
+  { id:'p4', name:'Habitación 4', color:'#D4A843', lits:1, loyer:230 },
+  { id:'p5', name:'Salon',        color:'#2E7D8C', lits:4, loyer:160 },
+];
+const ROOMS = PIECES.flatMap(p => {
+  const labels = p.lits===1?['A']:p.lits===2?['A','B']:['1','2','3','4'];
+  return labels.map(l => ({
+    id:`${p.id}-${l}`,
+    name:`${p.name} — Lit ${l}`,
+    shortName:`${p.name.replace('Habitación ','H').replace('Salon','Sal.')} ${l}`,
+    piece:p.id, pieceName:p.name, color:p.color, defaultRent:p.loyer
+  }));
+});
+const CLEAN_TASKS = {
+  'Cuisine':['Nettoyer les surfaces','Faire la vaisselle commune','Nettoyer le four/micro-ondes','Vider/nettoyer le frigo','Balayer et laver le sol'],
+  'Salon':['Aspirer/balayer','Dépoussiérer les meubles','Nettoyer les vitres','Vider les poubelles','Ranger les espaces communs'],
+};
+
+let tenants=[], payments=[], deposits=[], cleaning={}, documents={}, facturas=[];
+let currentTab='dashboard', currentSubTab='deposits', cleanWeekOffset=0, facturaFilter='electricidad';
+let currentLang = localStorage.getItem('mn-lang')||'fr';
+
+// ═══════════════════════════════════════
+// TRANSLATIONS
+// ═══════════════════════════════════════
+const TR = {
+  fr:{
+    dashboard:'Panel', rooms:'Lits', tenants:'Locataires', payments:'Paiements',
+    deposits:'Garanties', facturas:'Factures', cleaning:'Nettoyage', calendar:'Calendrier', more:'Plus',
+    addTenant:'+ Ajouter', editTenant:'Modifier', newTenant:'Nouveau locataire',
+    save:'Enregistrer', cancel:'Annuler', update:'Mettre à jour',
+    archive:'Archiver', archiveTitle:'Archiver locataire',
+    archiveMsg:'Le locataire sera archivé, pas supprimé. Toutes ses données sont conservées.',
+    name:'Nom complet', room:'Chambre / Lit', phone:'Téléphone', email:'Email',
+    entryDate:"Date d'entrée", exitDate:'Date de sortie', rent:'Loyer mensuel (€)',
+    status:'Statut', notes:'Notes',
+    active:'Actif', leaving:'En départ', ended:'Terminé', archived:'Archivé',
+    paid:'Payé', late:'En retard', pending:'En attente',
+    held:'Retenu', returned:'Rendu', partial:'Partiel',
+    income:'Revenus mensuels', collected:'Encaissé ce mois',
+    occupied:'Lits occupés', delayed:'Retards',
+    alerts:'Alertes', location:'Localisation',
+    myApartment:'Mon appartement',
+    newFactura:'+ Nouvelle facture',
+    noDocuments:'Aucun document', noTenants:'Aucun locataire.',
+    pago:'Paiement', fianza:'Caution', estadoVivienda:'État des lieux', whatsapp:'WhatsApp', eliminar:'Archiver',
+    settings:'Paramètres', language:'Langue',
+    modify:'Modifier', pdf:'PDF',
+    mesAnticipo:"1 mois d'avance", anticipos:'Avances', fianzas:'Cautions', total:'Total',
+    paymentTitle:'Paiement', month:'Mois (AAAA-MM)', amount:'Montant (€)',
+    depositTitle:'Caution & Garantie', refRent:'Loyer de référence',
+    advanceStatus:'Statut avance', depositStatus:'Statut caution',
+    noNotes:'Aucune note.', entry:'Entrée', exitPrev:'Sortie prévue',
+    close:'Fermer', send:'Envoyer WhatsApp',
+    totalGarantias:'TOTAL GARANTIES',
+    deleteConfirm:'Supprimer la facture', irreversible:'Action irréversible.',
+    cleanTitle:'Nettoyage', cleanSubtitle:'Rotation hebdomadaire',
+    noActiveTenants:'Aucun locataire actif',
+    calTitle:'Entrées / Sorties',
+    noTenantsReg:'Aucun locataire.',
+    inEntry:'Entrée', inExit:'Sortie', today:"aujourd'hui", expired:'dépassé', inDays:'dans',
+    lateAlert:'Paiement en retard', exitAlert:'Sortie prévue',
+    totalCobrado:'Total encaissé', quickPay:'Marquer payé',
+    detailInquilino:'Détail par locataire', perPerson:'Part par personne',
+    documents:'Documents', addDoc:'+ Ajouter',
+    noFacturas:'Aucune facture.',
+  },
+  es:{
+    dashboard:'Panel', rooms:'Camas', tenants:'Inquilinos', payments:'Pagos',
+    deposits:'Garantías', facturas:'Facturas', cleaning:'Limpieza', calendar:'Calendario', more:'Más',
+    addTenant:'+ Añadir', editTenant:'Modificar', newTenant:'Nuevo inquilino',
+    save:'Guardar', cancel:'Cancelar', update:'Actualizar',
+    archive:'Archivar', archiveTitle:'Archivar inquilino',
+    archiveMsg:'El inquilino será archivado, no eliminado. Todos sus datos quedan guardados.',
+    name:'Nombre completo', room:'Habitación / Cama', phone:'Teléfono', email:'Email',
+    entryDate:'Fecha de entrada', exitDate:'Fecha de salida', rent:'Alquiler mensual (€)',
+    status:'Estado', notes:'Notas',
+    active:'Activo', leaving:'En salida', ended:'Terminado', archived:'Archivado',
+    paid:'Pagado', late:'Atrasado', pending:'Pendiente',
+    held:'Retenido', returned:'Devuelto', partial:'Parcial',
+    income:'Ingresos mensuales', collected:'Cobrado este mes',
+    occupied:'Camas ocupadas', delayed:'Retrasos',
+    alerts:'Alertas', location:'Localización',
+    myApartment:'Mi apartamento',
+    newFactura:'+ Nueva factura',
+    noDocuments:'Sin documentos', noTenants:'Sin inquilinos.',
+    pago:'Pago', fianza:'Fianza', estadoVivienda:'Estado vivienda', whatsapp:'WhatsApp', eliminar:'Archivar',
+    settings:'Configuración', language:'Idioma',
+    modify:'Modificar', pdf:'PDF',
+    mesAnticipo:'Mes anticipo', anticipos:'Anticipos', fianzas:'Fianzas', total:'Total',
+    paymentTitle:'Pago', month:'Mes (AAAA-MM)', amount:'Importe (€)',
+    depositTitle:'Fianza & Garantía', refRent:'Alquiler de referencia',
+    advanceStatus:'Estado avance', depositStatus:'Estado caución',
+    noNotes:'Sin notas.', entry:'Entrada', exitPrev:'Salida prevista',
+    close:'Cerrar', send:'Enviar WhatsApp',
+    totalGarantias:'TOTAL GARANTÍAS',
+    deleteConfirm:'Eliminar factura', irreversible:'Esta acción es irreversible.',
+    cleanTitle:'Limpieza', cleanSubtitle:'Rotación semanal',
+    noActiveTenants:'Sin inquilinos activos',
+    calTitle:'Entradas / Salidas',
+    noTenantsReg:'Sin inquilinos.',
+    inEntry:'Entrada', inExit:'Salida', today:'hoy', expired:'vencido', inDays:'en',
+    lateAlert:'Pago atrasado', exitAlert:'Salida prevista',
+    totalCobrado:'Total cobrado', quickPay:'Marcar pagado',
+    detailInquilino:'Detalle por inquilino', perPerson:'Parte por persona',
+    documents:'Documentos', addDoc:'+ Añadir',
+    noFacturas:'Sin facturas.',
+  },
+  en:{
+    dashboard:'Panel', rooms:'Beds', tenants:'Tenants', payments:'Payments',
+    deposits:'Deposits', facturas:'Bills', cleaning:'Cleaning', calendar:'Calendar', more:'More',
+    addTenant:'+ Add', editTenant:'Edit', newTenant:'New tenant',
+    save:'Save', cancel:'Cancel', update:'Update',
+    archive:'Archive', archiveTitle:'Archive tenant',
+    archiveMsg:'The tenant will be archived, not deleted. All data is kept.',
+    name:'Full name', room:'Room / Bed', phone:'Phone', email:'Email',
+    entryDate:'Entry date', exitDate:'Exit date', rent:'Monthly rent (€)',
+    status:'Status', notes:'Notes',
+    active:'Active', leaving:'Leaving', ended:'Ended', archived:'Archived',
+    paid:'Paid', late:'Late', pending:'Pending',
+    held:'Held', returned:'Returned', partial:'Partial',
+    income:'Monthly income', collected:'Collected this month',
+    occupied:'Occupied beds', delayed:'Late payments',
+    alerts:'Alerts', location:'Location',
+    myApartment:'My apartment',
+    newFactura:'+ New bill',
+    noDocuments:'No documents', noTenants:'No tenants.',
+    pago:'Payment', fianza:'Deposit', estadoVivienda:'Property status', whatsapp:'WhatsApp', eliminar:'Archive',
+    settings:'Settings', language:'Language',
+    modify:'Edit', pdf:'PDF',
+    mesAnticipo:'1 month advance', anticipos:'Advances', fianzas:'Deposits', total:'Total',
+    paymentTitle:'Payment', month:'Month (YYYY-MM)', amount:'Amount (€)',
+    depositTitle:'Deposit & Guarantee', refRent:'Reference rent',
+    advanceStatus:'Advance status', depositStatus:'Deposit status',
+    noNotes:'No notes.', entry:'Entry', exitPrev:'Expected exit',
+    close:'Close', send:'Send WhatsApp',
+    totalGarantias:'TOTAL DEPOSITS',
+    deleteConfirm:'Delete bill', irreversible:'This action is irreversible.',
+    cleanTitle:'Cleaning', cleanSubtitle:'Weekly rotation',
+    noActiveTenants:'No active tenants',
+    calTitle:'Entry / Exit Calendar',
+    noTenantsReg:'No tenants.',
+    inEntry:'Entry', inExit:'Exit', today:'today', expired:'expired', inDays:'in',
+    lateAlert:'Late payment', exitAlert:'Exit planned',
+    totalCobrado:'Total collected', quickPay:'Mark as paid',
+    detailInquilino:'Detail per tenant', perPerson:'Per person',
+    documents:'Documents', addDoc:'+ Add',
+    noFacturas:'No bills.',
+  }
+};
+function t(k){ return TR[currentLang]?.[k] || TR.fr[k] || k; }
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function roomById(id){ return ROOMS.find(r=>r.id===id); }
+function pieceById(id){ return PIECES.find(p=>p.id===id); }
+function fmtDate(d){ if(!d) return '—'; const[y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+function daysUntil(d){ if(!d) return null; return Math.ceil((new Date(d)-new Date())/86400000); }
+function getWeek(){ const d=new Date(); return Math.ceil(((d-new Date(d.getFullYear(),0,1))/86400000+new Date(d.getFullYear(),0,1).getDay()+1)/7); }
+function currentMonth(){ return new Date().toISOString().slice(0,7); }
+function activeTenants(){ return tenants.filter(t=>t.status!=='ended'&&t.status!=='archived'); }
+
+function badge(label, color, bg){
+  const b = bg||color+'22';
+  return `<span class="badge" style="background:${b};color:${color};border:1px solid ${color}44">${label}</span>`;
+}
+function statusBadge(s){
+  const m={active:[t('active'),'#2E7D8C'],leaving:[t('leaving'),'#D4A843'],ended:[t('ended'),'#8a9ab5'],archived:[t('archived'),'#aaa']};
+  const[l,c]=m[s]||[s,'#8a9ab5']; return badge(l,c);
+}
+function payBadge(s){
+  const m={paid:[t('paid'),'#2E7D8C'],late:[t('late'),'#7D2340'],pending:[t('pending'),'#D4A843']};
+  const[l,c]=m[s]||[t('pending'),'#D4A843']; return badge(l,c);
+}
+function depBadge(s){
+  const m={held:[t('held'),'#1A2B4A'],returned:[t('returned'),'#2E7D8C'],partial:[t('partial'),'#D4A843']};
+  const[l,c]=m[s]||[t('held'),'#1A2B4A']; return badge(l,c);
+}
+function localeDate(){ return currentLang==='en'?'en-US':currentLang==='fr'?'fr-FR':'es-ES'; }
+
+// ═══════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════
+function getDb(){ return window.db; }
+const F = ()=>window.dbFns;
+async function saveTenant(ten){ await F().setDoc(F().doc(getDb(),'tenants',ten.id), ten); }
+async function archiveTenant(id){
+  const ten=tenants.find(x=>x.id===id); if(!ten) return;
+  await saveTenant({...ten, status:'archived'});
+  closeModal(); renderTab(currentTab); updateFreeBadges();
+}
+async function savePayment(p){ await F().setDoc(F().doc(getDb(),'payments',p.id), p); }
+async function saveDeposit(d){ await F().setDoc(F().doc(getDb(),'deposits',d.tenantId), d); }
+async function saveCleaning(c){ await F().setDoc(F().doc(getDb(),'cleaning','data'), c); }
+async function saveDocuments(tid, files){ await F().setDoc(F().doc(getDb(),'documents',tid), {files}); }
+async function saveFactura(f){ await F().setDoc(F().doc(getDb(),'facturas',f.id), f); }
+async function deleteFactura(id){ await F().deleteDoc(F().doc(getDb(),'facturas',id)); }
+
+function loadData(){
+  const db=getDb(), {onSnapshot,collection}=F();
+  onSnapshot(collection(db,'tenants'), snap=>{
+    tenants=snap.docs.map(d=>d.data());
+    renderTab(currentTab); updateFreeBadges();
+  });
+  onSnapshot(collection(db,'payments'), snap=>{
+    payments=snap.docs.map(d=>d.data()).filter(p=>p.tenantId);
+    renderTab(currentTab);
+  });
+  onSnapshot(collection(db,'deposits'), snap=>{
+    deposits=snap.docs.map(d=>d.data());
+    if(currentTab==='deposits') renderDeposits();
+  });
+  onSnapshot(collection(db,'cleaning'), snap=>{
+    snap.docs.forEach(d=>{ if(d.id==='data') cleaning=d.data(); });
+    if(currentTab==='cleaning') renderCleaning();
+  });
+  onSnapshot(collection(db,'documents'), snap=>{
+    documents={};
+    snap.docs.forEach(d=>{ documents[d.id]=d.data().files||[]; });
+    if(currentTab==='tenants') renderTenants();
+  });
+  onSnapshot(collection(db,'facturas'), snap=>{
+    facturas=snap.docs.map(d=>d.data());
+    if(currentTab==='facturas') renderFacturas();
+  });
+}
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+const ALL_TABS = ['dashboard','rooms','tenants','payments','deposits','facturas','cleaning','calendar'];
+
+function showTab(tab){
+  currentTab = tab;
+  // Update top nav
+  ALL_TABS.forEach(id=>{
+    document.getElementById('tnav-'+id)?.classList.toggle('active', id===tab);
+  });
+  // Show/hide tab panels
+  document.querySelectorAll('.main>div').forEach(d=>d.classList.add('hidden'));
+  document.getElementById('tab-'+tab)?.classList.remove('hidden');
+  renderTab(tab);
+}
+
+function renderTab(tab){
+  if(tab==='dashboard') renderDashboard();
+  if(tab==='rooms') renderRooms();
+  if(tab==='tenants') renderTenants();
+  if(tab==='payments') renderPayments();
+  if(tab==='deposits') renderDeposits();
+  if(tab==='facturas') renderFacturas();
+  if(tab==='cleaning') renderCleaning();
+  if(tab==='calendar') renderCalendar();
+}
+
+function updateFreeBadges(){
+  const occupied = activeTenants().map(t=>t.room);
+  const free = ROOMS.filter(r=>!occupied.includes(r.id));
+  const el = document.getElementById('header-free');
+  if(!el) return;
+  if(free.length===0){ el.innerHTML=''; return; }
+  el.innerHTML = `<span class="hbadge free-count">${free.length} libre${free.length>1?'s':''}</span>`;
+}
+
+// Mise à jour labels top nav selon langue
+function updateTopNavLabels(){
+  const labels = {
+    fr:{dashboard:'Panel',rooms:'Lits',tenants:'Locataires',payments:'Paiements',deposits:'Garanties',facturas:'Factures',cleaning:'Nettoyage',calendar:'Calendrier'},
+    es:{dashboard:'Panel',rooms:'Camas',tenants:'Inquilinos',payments:'Pagos',deposits:'Garantías',facturas:'Facturas',cleaning:'Limpieza',calendar:'Calendario'},
+    en:{dashboard:'Panel',rooms:'Beds',tenants:'Tenants',payments:'Payments',deposits:'Deposits',facturas:'Bills',cleaning:'Cleaning',calendar:'Calendar'},
+  };
+  ALL_TABS.forEach(id=>{
+    const btn=document.getElementById('tnav-'+id);
+    if(btn){ const icon=btn.querySelector('i'); btn.textContent=''; if(icon) btn.appendChild(icon); btn.append(labels[currentLang][id]); }
+  });
+}
+
+// ═══════════════════════════════════════
+// SETTINGS / LANGUAGE
+// ═══════════════════════════════════════
+function setLang(lang){
+  currentLang = lang;
+  localStorage.setItem('mn-lang', lang);
+  const sub = lang==='fr'?'GESTION LOCATIVE · 11 LITS':lang==='en'?'RENTAL MGMT · 11 BEDS':'GESTIÓN · 11 CAMAS';
+  document.getElementById('header-sub').textContent = sub;
+  updateTopNavLabels();
+  closeModal(); renderTab(currentTab); updateFreeBadges();
+}
+
+function openSettings(){
+  const langs=[{code:'fr',flag:'🇫🇷',label:'Français'},{code:'es',flag:'🇪🇸',label:'Español'},{code:'en',flag:'🇬🇧',label:'English'}];
+  openModal(t('settings'), `
+    <p class="sec" style="margin-top:0">${t('language')}</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${langs.map(l=>`
+        <div onclick="setLang('${l.code}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:${currentLang===l.code?'#1A2B4A':'#F4F7FC'};border-radius:12px;cursor:pointer;border:1.5px solid ${currentLang===l.code?'#1A2B4A':'transparent'}">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:1.3rem">${l.flag}</span>
+            <span style="font-size:14px;font-weight:600;color:${currentLang===l.code?'#fff':'#1A2B4A'}">${l.label}</span>
+          </div>
+          ${currentLang===l.code?`<i class="ti ti-check" style="color:#C9A96E;font-size:16px"></i>`:''}
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid #EEF2F8">
+      <p class="sec" style="margin-top:0">Version</p>
+      <div style="font-size:11px;font-family:monospace;color:#8a9ab5">MayNest v2.0 · Firebase · 11 lits · 5 pièces</div>
+    </div>`);
+}
+
+// ═══════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════
+function renderDashboard(){
+  const active = activeTenants();
+  const totalRev = active.reduce((s,t)=>s+(t.rent||0),0);
+  const mon = currentMonth();
+  const paidAmt = payments.filter(p=>p.month===mon&&p.status==='paid').reduce((s,p)=>s+(p.amount||0),0);
+  const lateList = payments.filter(p=>{
+    const ten=tenants.find(x=>x.id===p.tenantId);
+    return p.month===mon&&p.status==='late'&&ten&&ten.status!=='ended';
+  });
+  const exits = tenants.filter(t=>t.exitDate&&daysUntil(t.exitDate)<=45&&t.status!=='ended'&&t.status!=='archived');
+  const occupiedCount = active.length;
+  const paidCount = payments.filter(p=>p.month===mon&&p.status==='paid').length;
+  const pct = active.length ? Math.round((paidCount/active.length)*100) : 0;
+  const monthLabel = new Date().toLocaleDateString(localeDate(),{month:'long',year:'numeric'});
+
+  let html = `
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi" style="border-left:3px solid #1A2B4A">
+      <div class="kpi-icon" style="color:#1A2B4A"><i class="ti ti-currency-euro"></i></div>
+      <div class="kpi-val" style="color:#1A2B4A">${totalRev} €</div>
+      <div class="kpi-lbl">${t('income')}</div>
+    </div>
+    <div class="kpi" style="border-left:3px solid #2E7D8C">
+      <div class="kpi-icon" style="color:#2E7D8C"><i class="ti ti-checks"></i></div>
+      <div class="kpi-val" style="color:#2E7D8C">${paidAmt} €</div>
+      <div class="kpi-lbl">${t('collected')}</div>
+    </div>
+    <div class="kpi" style="border-left:3px solid #D4A843">
+      <div class="kpi-icon" style="color:#D4A843"><i class="ti ti-bed"></i></div>
+      <div class="kpi-val" style="color:#9A7520">${occupiedCount} / ${ROOMS.length}</div>
+      <div class="kpi-lbl">${t('occupied')}</div>
+    </div>
+    <div class="kpi" style="border-left:3px solid ${lateList.length?'#7D2340':'#2E7D8C'}">
+      <div class="kpi-icon" style="color:${lateList.length?'#7D2340':'#2E7D8C'}"><i class="ti ti-${lateList.length?'clock-exclamation':'clock-check'}"></i></div>
+      <div class="kpi-val" style="color:${lateList.length?'#7D2340':'#2E7D8C'}">${lateList.length}</div>
+      <div class="kpi-lbl">${t('delayed')}</div>
+    </div>
+  </div>
+
+  <!-- Mois en cours -->
+  <div class="card" style="border-left:3px solid #1A2B4A">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:700;color:#1A2B4A;text-transform:capitalize">${monthLabel}</div>
+      <div style="font-size:11px;font-family:monospace;color:#8a9ab5">${paidCount} / ${active.length} payé${paidCount>1?'s':''}</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill" style="background:${pct===100?'#2E7D8C':'#1A2B4A'};width:${pct}%"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px">
+      <div style="font-size:11px;color:#8a9ab5;font-family:monospace">${paidAmt} € encaissé</div>
+      <div style="font-size:11px;color:#D4A843;font-family:monospace">${totalRev-paidAmt > 0 ? (totalRev-paidAmt)+' € restant' : '✓ Complet'}</div>
+    </div>
+  </div>`;
+
+  // Alertes
+  if(lateList.length>0 || exits.length>0){
+    html += `<div class="sec">${t('alerts')}</div>`;
+    lateList.forEach(p=>{
+      const ten=tenants.find(x=>x.id===p.tenantId); if(!ten) return;
+      const r=roomById(ten.room);
+      html += `<div class="alert-strip" style="background:#7D234011;border:1px solid #7D234033">
+        <div style="display:flex;align-items:center;gap:8px">
+          <i class="ti ti-alert-triangle" style="color:#7D2340;font-size:16px"></i>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#7D2340">${ten.name}</div>
+            <div style="font-size:11px;color:#9B6070;font-family:monospace">${r?.shortName||r?.name||''} · ${p.amount||0} €</div>
+          </div>
+        </div>
+        <button onclick="quickPay('${ten.id}','${mon}')" style="background:#7D2340;color:#fff;border:none;border-radius:20px;padding:4px 12px;font-size:11px;font-family:monospace;cursor:pointer;white-space:nowrap">Payer ✓</button>
+      </div>`;
+    });
+    exits.forEach(ten2=>{
+      const d=daysUntil(ten2.exitDate);
+      html += `<div class="alert-strip" style="background:#1A2B4A11;border:1px solid #1A2B4A33">
+        <div style="display:flex;align-items:center;gap:8px">
+          <i class="ti ti-logout" style="color:#1A2B4A;font-size:16px"></i>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1A2B4A">${ten2.name}</div>
+            <div style="font-size:11px;color:#5B7FA6;font-family:monospace">${fmtDate(ten2.exitDate)} · ${d>0?`dans ${d}j`:d===0?'Aujourd\'hui':'Dépassé'}</div>
+          </div>
+        </div>
+        ${statusBadge(ten2.status)}
+      </div>`;
+    });
+  }
+
+  // Localisation
+  html += `<div class="sec">📍 Localisation</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:8px">
+        <i class="ti ti-map-pin" style="color:#1A2B4A;font-size:18px"></i>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#1A2B4A">Calle de las Flores, 12</div>
+          <div style="font-size:11px;color:#8a9ab5;font-family:monospace">Almería, España</div>
+        </div>
+      </div>
+      <a href="https://maps.google.com/?q=Calle+de+las+Flores+12+Almeria+Spain" target="_blank" style="background:#1A2B4A;color:#fff;border-radius:20px;padding:6px 14px;font-size:11px;font-family:monospace;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:4px"><i class="ti ti-external-link" style="font-size:12px"></i> Abrir Maps</a>
+    </div>
+    <div style="overflow:hidden;height:190px">
+      <iframe src="https://maps.google.com/maps?q=Calle+de+las+Flores+12+Almeria+Spain&output=embed&z=16" width="100%" height="190" style="border:0;display:block" allowfullscreen="" loading="lazy"></iframe>
+    </div>
+    <div style="padding:8px 14px;background:#F4F7FC;display:flex;gap:14px;flex-wrap:wrap;border-top:0.5px solid #F0F4FA">
+      <div style="font-size:11px;color:#5B7FA6;font-family:monospace"><i class="ti ti-building" style="font-size:12px"></i> 5 pièces · 11 lits</div>
+      <div style="font-size:11px;color:#5B7FA6;font-family:monospace"><i class="ti ti-home" style="font-size:12px"></i> Coliving</div>
+      <div style="font-size:11px;color:${activeTenants().length>0?'#2E7D8C':'#D4A843'};font-family:monospace;font-weight:700"><i class="ti ti-bed" style="font-size:12px"></i> ${activeTenants().length} / ${ROOMS.length} occupés</div>
+    </div>
+  </div>`;
+
+  // Locataires actifs résumé
+  if(active.length>0){
+    html += `<div class="sec" style="margin-top:1.2rem">${t('tenants')} actifs (${active.length})</div>
+    <div class="card" style="padding:0.5rem 0.8rem">`;
+    active.forEach((ten,i)=>{
+      const r=roomById(ten.room);
+      const p=payments.find(x=>x.tenantId===ten.id&&x.month===mon);
+      const isLast = i===active.length-1;
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${isLast?'':'border-bottom:0.5px solid #F0F4FA'}">
+        <div style="width:32px;height:32px;border-radius:50%;background:${r?.color}20;border:1.5px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${r?.color};flex-shrink:0">${ten.name?.[0]||'?'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:#1A2B4A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ten.name}</div>
+          <div style="font-size:11px;color:#8a9ab5;font-family:monospace">${r?.shortName||'—'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;font-family:monospace;color:#1A2B4A;font-weight:600">${ten.rent||0} €</span>
+          ${p?payBadge(p.status):`<span style="font-size:10px;background:#D4A84322;color:#9A7520;padding:2px 7px;border-radius:10px;font-family:monospace;border:1px solid #D4A84344">—</span>`}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div style="text-align:center;padding:2rem;color:#8a9ab5;font-family:monospace;font-size:13px">
+      Aucun locataire actif.<br>
+      <button class="btn btn-navy" style="margin-top:1rem" onclick="showTab('tenants')">+ Ajouter un locataire</button>
+    </div>`;
+  }
+
+  document.getElementById('tab-dashboard').innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// ROOMS
+// ═══════════════════════════════════════
+function renderRooms(){
+  const totalLits=ROOMS.length;
+  const occupes=ROOMS.filter(r=>tenants.some(t=>t.room===r.id&&t.status!=='ended'&&t.status!=='archived')).length;
+  const libres=totalLits-occupes;
+  const revTotal=PIECES.reduce((s,p)=>s+p.lits*p.loyer,0);
+
+  let html = `
+  <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:0.9rem">
+    <div class="kpi" style="border-left:3px solid #2E7D8C;padding:0.7rem">
+      <div class="kpi-val" style="font-size:1.4rem;color:#2E7D8C">${occupes}</div>
+      <div class="kpi-lbl">Occupés</div>
+    </div>
+    <div class="kpi" style="border-left:3px solid #D4A843;padding:0.7rem">
+      <div class="kpi-val" style="font-size:1.4rem;color:#9A7520">${libres}</div>
+      <div class="kpi-lbl">Libres</div>
+    </div>
+    <div class="kpi" style="border-left:3px solid #1A2B4A;padding:0.7rem">
+      <div class="kpi-val" style="font-size:1.1rem;color:#1A2B4A">${revTotal}€</div>
+      <div class="kpi-lbl">Potentiel</div>
+    </div>
+  </div>`;
+
+  PIECES.forEach(piece=>{
+    const lits=ROOMS.filter(r=>r.piece===piece.id);
+    const occupesP=lits.filter(r=>tenants.some(t=>t.room===r.id&&t.status!=='ended'&&t.status!=='archived')).length;
+    html += `<div class="room-block">
+      <div style="height:3px;background:${piece.color}"></div>
+      <div class="room-header">
+        <div style="display:flex;align-items:center;gap:8px">
+          <i class="ti ti-door" style="color:${piece.color};font-size:16px"></i>
+          <div style="font-weight:700;color:${piece.color};font-size:14px">${piece.name}</div>
+        </div>
+        <div style="font-size:10px;font-family:monospace;color:#8a9ab5">${occupesP}/${lits.length} · ${piece.loyer} €/lit</div>
+      </div>
+      <div class="room-beds" style="grid-template-columns:repeat(${lits.length===1?1:lits.length<=2?2:2},1fr)">`;
+
+    lits.forEach(room=>{
+      const tenant=tenants.find(t=>t.room===room.id&&t.status!=='ended'&&t.status!=='archived');
+      const litLabel=`Lit ${room.id.split('-')[1]}`;
+      if(tenant){
+        html += `<div class="bed-card" style="background:#F8FAFD;border-color:${piece.color}44">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:7px">
+            <i class="ti ti-bed" style="font-size:12px;color:${piece.color}"></i>
+            <span style="font-size:10px;font-weight:700;color:${piece.color};font-family:monospace">${litLabel}</span>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#1A2B4A;margin-bottom:1px">${tenant.name.split(' ')[0]} ${(tenant.name.split(' ')[1]||'')[0]||''}.</div>
+          <div style="font-size:10px;color:#8a9ab5;font-family:monospace;margin-bottom:7px">${tenant.rent||0} €/mois</div>
+          <div style="display:flex;gap:4px">
+            <button style="font-size:10px;background:transparent;color:${piece.color};border:1px solid ${piece.color}44;border-radius:8px;padding:2px 7px;cursor:pointer;font-family:monospace" onclick="openEditTenant('${tenant.id}')">✏</button>
+            <button style="font-size:10px;background:#25D36618;color:#25D366;border:1px solid #25D36644;border-radius:8px;padding:2px 7px;cursor:pointer;font-family:monospace" onclick="openWhatsApp('${tenant.id}')">WA</button>
+          </div>
+        </div>`;
+      } else {
+        html += `<div class="bed-card bed-free" style="border-color:${piece.color}33">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:7px">
+            <i class="ti ti-bed" style="font-size:12px;color:${piece.color}66"></i>
+            <span style="font-size:10px;font-weight:700;color:${piece.color}88;font-family:monospace">${litLabel}</span>
+          </div>
+          <div style="font-size:10px;color:#2E7D8C;font-family:monospace;margin-bottom:7px">● Libre · ${room.defaultRent} €</div>
+          <button style="font-size:10px;background:${piece.color};color:#fff;border:none;border-radius:8px;padding:3px 9px;cursor:pointer;font-family:monospace;font-weight:700" onclick="openAddTenant('${room.id}')">+ Ajouter</button>
+        </div>`;
+      }
+    });
+    html += `</div></div>`;
+  });
+
+  document.getElementById('tab-rooms').innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// TENANTS
+// ═══════════════════════════════════════
+function renderTenants(){
+  const active = tenants.filter(t=>t.status!=='archived');
+  let html = `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <h1 class="page-title" style="margin:0">${t('tenants')}</h1>
+    <button class="btn btn-navy btn-sm" onclick="openAddTenant('')">${t('addTenant')}</button>
+  </div>`;
+
+  if(!active.length){
+    html += `<div style="text-align:center;padding:3rem;color:#8a9ab5;font-family:monospace">${t('noTenants')}</div>`;
+  }
+
+  active.forEach(ten=>{
+    const r=roomById(ten.room);
+    const mon=currentMonth();
+    const p=payments.find(x=>x.tenantId===ten.id&&x.month===mon);
+    const docs=(documents[ten.id]||[]);
+
+    html += `<div class="tenant-card">
+      <div class="tenant-main">
+        <div class="avatar" style="background:${r?.color}20;border:2px solid ${r?.color};color:${r?.color}">${ten.name?.[0]||'?'}</div>
+        <div class="tenant-info">
+          <div class="tenant-name">${ten.name}</div>
+          <div class="tenant-sub">${r?.name||'—'} · ${ten.rent||0} €/mois</div>
+          <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            ${statusBadge(ten.status)}
+            ${p ? payBadge(p.status) : `<span style="font-size:10px;color:#8a9ab5;font-family:monospace">— ce mois</span>`}
+          </div>
+        </div>
+        <button style="background:transparent;border:0.5px solid var(--border);border-radius:8px;padding:5px 7px;cursor:pointer" onclick="openEditTenant('${ten.id}')">
+          <i class="ti ti-edit" style="font-size:14px;color:#1A2B4A"></i>
+        </button>
+      </div>
+
+      <div style="padding:0 14px 10px;display:flex;gap:6px;flex-wrap:wrap">
+        ${ten.phone ? `<a href="tel:${ten.phone}" style="font-size:11px;color:#2E7D8C;font-family:monospace;text-decoration:none;display:flex;align-items:center;gap:3px"><i class="ti ti-phone" style="font-size:12px"></i>${ten.phone}</a>` : ''}
+        ${ten.entryDate ? `<span style="font-size:11px;color:#8a9ab5;font-family:monospace"><i class="ti ti-calendar" style="font-size:11px"></i> ${fmtDate(ten.entryDate)}${ten.exitDate?' → '+fmtDate(ten.exitDate):''}</span>` : ''}
+      </div>
+
+      <div class="tenant-actions">
+        <button class="btn-sm" style="background:#2E7D8C18;color:#2E7D8C;border-color:#2E7D8C44;border-radius:20px" onclick="openPayment('${ten.id}')"><i class="ti ti-coin-euro"></i> ${t('pago')}</button>
+        <button class="btn-sm" style="background:#D4A84318;color:#9A7520;border-color:#D4A84344;border-radius:20px" onclick="openDeposit('${ten.id}')"><i class="ti ti-shield"></i> ${t('fianza')}</button>
+        <button class="btn-sm" style="background:#2E508C18;color:#2E508C;border-color:#2E508C44;border-radius:20px" onclick="openEtatLieux('${ten.id}')"><i class="ti ti-home-check"></i></button>
+        <button class="btn-sm" style="background:#25D36618;color:#1a9c4a;border-color:#25D36644;border-radius:20px" onclick="openWhatsApp('${ten.id}')"><i class="ti ti-brand-whatsapp"></i></button>
+        <button class="btn-sm" style="background:#7D234011;color:#7D2340;border-color:#7D234033;border-radius:20px" onclick="confirmDelete('${ten.id}')"><i class="ti ti-archive"></i></button>
+      </div>
+
+      <!-- Documents -->
+      <div style="padding:0 14px 12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:11px;color:#8a9ab5;font-family:monospace"><i class="ti ti-folder" style="color:#D4A843;font-size:12px"></i> ${t('documents')} (${docs.length})</span>
+          <label style="cursor:pointer;background:#1A2B4A;color:#fff;border-radius:20px;padding:3px 10px;font-size:10px;font-family:monospace;font-weight:700">+<input type="file" style="display:none" accept="*/*" onchange="uploadDoc('${ten.id}',this)"></label>
+        </div>
+        ${docs.length===0 ? `<div style="font-size:11px;color:#8a9ab5;font-family:monospace;padding:6px 8px;background:#F4F7FC;border-radius:8px;text-align:center">${t('noDocuments')}</div>` :
+          docs.map(doc=>{
+            const icon=doc.type?.startsWith('image/')?'ti-photo':doc.type==='application/pdf'?'ti-file-type-pdf':'ti-paperclip';
+            return `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#F4F7FC;border-radius:8px;margin-bottom:4px;border:0.5px solid var(--border)">
+              <i class="ti ${icon}" style="font-size:14px;color:#2E508C;flex-shrink:0"></i>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11px;font-weight:500;color:#1A2B4A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${doc.name}</div>
+                <div style="font-size:10px;color:#8a9ab5;font-family:monospace">${doc.date} · ${(doc.size/1024/1024).toFixed(1)} MB</div>
+              </div>
+              <div style="display:flex;gap:3px">
+                <button style="background:transparent;border:0.5px solid var(--border);border-radius:6px;padding:2px 5px;cursor:pointer" onclick="viewDoc('${ten.id}','${doc.id}')"><i class="ti ti-eye" style="font-size:11px;color:#1A2B4A"></i></button>
+                <button style="background:transparent;border:0.5px solid var(--border);border-radius:6px;padding:2px 5px;cursor:pointer" onclick="downloadDoc('${ten.id}','${doc.id}')"><i class="ti ti-download" style="font-size:11px;color:#2E7D8C"></i></button>
+                <button style="background:transparent;border:0.5px solid #7D234033;border-radius:6px;padding:2px 5px;cursor:pointer" onclick="deleteDoc('${ten.id}','${doc.id}')"><i class="ti ti-trash" style="font-size:11px;color:#7D2340"></i></button>
+              </div>
+            </div>`;
+          }).join('')}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('tab-tenants').innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// PAYMENTS
+// ═══════════════════════════════════════
+function renderPayments(){
+  const mon = currentMonth();
+  const months = [...new Set([mon,...payments.map(p=>p.month).filter(Boolean)])].sort().reverse().slice(0,4);
+  let html = `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <h1 class="page-title" style="margin:0">${t('payments')}</h1>
+  </div>`;
+
+  months.forEach(month=>{
+    const[y,m]=month.split('-');
+    const label=new Date(y,m-1).toLocaleDateString(localeDate(),{month:'long',year:'numeric'});
+    const monthPays=payments.filter(p=>p.month===month);
+    const paidAmt=monthPays.filter(p=>p.status==='paid').reduce((s,p)=>s+(p.amount||0),0);
+    const active=activeTenants();
+    const paidCount=monthPays.filter(p=>p.status==='paid').length;
+    const totalRev=active.reduce((s,t)=>s+(t.rent||0),0);
+    const pct=active.length?Math.round((paidCount/active.length)*100):0;
+    const isCurrent=month===mon;
+
+    html += `<div class="card" style="${isCurrent?'border-left:3px solid #1A2B4A':''};margin-bottom:0.75rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:700;color:#1A2B4A;text-transform:capitalize">${label}</div>
+        <div style="font-size:11px;font-family:monospace;color:${pct===100?'#2E7D8C':'#8a9ab5'}">${paidCount}/${active.length} · ${paidAmt} €</div>
+      </div>
+      <div class="progress-wrap" style="margin-bottom:0.9rem">
+        <div class="progress-fill" style="background:${pct===100?'#2E7D8C':'#1A2B4A'};width:${pct}%"></div>
+      </div>`;
+
+    active.forEach((ten,i)=>{
+      const r=roomById(ten.room);
+      const p=monthPays.find(x=>x.tenantId===ten.id);
+      const isLast=i===active.length-1;
+      html += `<div class="pay-row" style="${isLast?'border-bottom:none':''}">
+        <div style="width:28px;height:28px;border-radius:50%;background:${r?.color}20;border:1.5px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${r?.color};flex-shrink:0">${ten.name?.[0]||'?'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:#1A2B4A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ten.name}</div>
+          <div style="font-size:10px;color:#8a9ab5;font-family:monospace">${r?.shortName||'—'}</div>
+        </div>
+        <div style="font-family:monospace;font-size:12px;font-weight:700;color:#1A2B4A;flex-shrink:0">${ten.rent||0} €</div>
+        <div style="flex-shrink:0;display:flex;gap:5px;align-items:center">
+          ${p ? payBadge(p.status) : `<span style="font-size:10px;color:#8a9ab5;font-family:monospace;border:1px solid #ddd;padding:2px 7px;border-radius:10px">—</span>`}
+          ${(!p||p.status!=='paid') ? `<button onclick="quickPay('${ten.id}','${month}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:10px;font-family:monospace;cursor:pointer;font-weight:700">✓</button>` : `<button onclick="openPayment('${ten.id}')" style="background:transparent;border:0.5px solid var(--border);border-radius:8px;padding:3px 6px;cursor:pointer"><i class="ti ti-edit" style="font-size:11px;color:#8a9ab5"></i></button>`}
+        </div>
+      </div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  document.getElementById('tab-payments').innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// DEPOSITS
+// ═══════════════════════════════════════
+function renderDeposits(){
+  const totalAdv=deposits.filter(d=>d.advanceStatus==='held').reduce((s,d)=>s+(d.advance||0),0);
+  const totalFia=deposits.filter(d=>d.fianzaStatus==='held').reduce((s,d)=>s+(d.fianza||0),0);
+
+  let html = `
+  <h1 class="page-title">${t('deposits')}</h1>
+  <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:0.9rem">
+    <div style="background:#1A2B4A;border-radius:12px;padding:0.8rem;text-align:center">
+      <div style="font-size:9px;color:rgba(255,255,255,0.5);font-family:monospace;margin-bottom:4px">AVANCES</div>
+      <div style="font-size:1.1rem;font-weight:800;color:#fff">${totalAdv} €</div>
+    </div>
+    <div style="background:#1A2B4A;border-radius:12px;padding:0.8rem;text-align:center">
+      <div style="font-size:9px;color:rgba(255,255,255,0.5);font-family:monospace;margin-bottom:4px">CAUTIONS</div>
+      <div style="font-size:1.1rem;font-weight:800;color:#fff">${totalFia} €</div>
+    </div>
+    <div style="background:#1A2B4A;border-radius:12px;padding:0.8rem;text-align:center;border:1.5px solid #C9A96E">
+      <div style="font-size:9px;color:rgba(255,255,255,0.5);font-family:monospace;margin-bottom:4px">TOTAL</div>
+      <div style="font-size:1.1rem;font-weight:800;color:#C9A96E">${totalAdv+totalFia} €</div>
+    </div>
+  </div>
+  <div class="sec">${t('detailInquilino')}</div>`;
+
+  tenants.forEach(ten=>{
+    const r=roomById(ten.room);
+    const d=deposits.find(x=>x.tenantId===ten.id);
+    if(!d) return;
+    const total=(d.advance||0)+(d.fianza||0);
+    html += `<div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #F0F4FA">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:50%;background:${r?.color}20;border:1.5px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-weight:700;color:${r?.color};font-size:12px">${ten.name?.[0]||'?'}</div>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:#1A2B4A">${ten.name}</div>
+            <div style="font-size:10px;color:#8a9ab5;font-family:monospace">${r?.shortName||'—'} · ${ten.rent||0} €/mois</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:5px">
+          <button class="btn-sm btn-ghost" onclick="openDeposit('${ten.id}')">${t('modify')}</button>
+          <button class="btn-sm" style="background:#7D2340;color:#fff;border-color:#7D2340;border-radius:20px" onclick="exportDepositPDF('${ten.id}')">${t('pdf')}</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr">
+        <div style="padding:10px 12px;border-right:0.5px solid #F0F4FA">
+          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">${t('mesAnticipo').toUpperCase()}</div>
+          <div style="font-size:1.1rem;font-weight:800;color:#1A2B4A">${d.advance||0} €</div>
+          ${depBadge(d.advanceStatus)}
+          ${d.advancePaidDate?`<div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-top:3px">${fmtDate(d.advancePaidDate)}</div>`:''}
+        </div>
+        <div style="padding:10px 12px">
+          <div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-bottom:3px">${t('fianza').toUpperCase()}</div>
+          <div style="font-size:1.1rem;font-weight:800;color:#1A2B4A">${d.fianza||0} €</div>
+          ${depBadge(d.fianzaStatus)}
+          ${d.fianzaPaidDate?`<div style="font-size:9px;color:#8a9ab5;font-family:monospace;margin-top:3px">${fmtDate(d.fianzaPaidDate)}</div>`:''}
+        </div>
+      </div>
+      <div style="padding:8px 14px;background:#7D234011;display:flex;justify-content:space-between;align-items:center;border-top:0.5px solid #F0F4FA">
+        <span style="font-size:10px;color:#9B6070;font-family:monospace">TOTAL RETENU</span>
+        <span style="font-size:1rem;font-weight:800;color:#7D2340">${total} €</span>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('tab-deposits').innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// FACTURAS
+// ═══════════════════════════════════════
+function renderFacturas(){
+  const filtered=facturas.filter(f=>f.type===facturaFilter).sort((a,b)=>b.month.localeCompare(a.month));
+  const active=activeTenants();
+
+  let html = `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <h1 class="page-title" style="margin:0">${t('facturas')}</h1>
+    <button class="btn btn-navy btn-sm" onclick="openNewFactura()">+ ${currentLang==='fr'?'Facture':currentLang==='en'?'Bill':'Factura'}</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:1rem">
+    <button onclick="facturaFilter='electricidad';renderFacturas()" style="flex:1;background:${facturaFilter==='electricidad'?'#1A2B4A':'#fff'};color:${facturaFilter==='electricidad'?'#fff':'#1A2B4A'};border:1.5px solid #1A2B4A;border-radius:20px;padding:9px 12px;font-size:12px;font-family:monospace;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px">
+      <i class="ti ti-bolt" style="font-size:14px"></i> Électricité
+    </button>
+    <button onclick="facturaFilter='agua';renderFacturas()" style="flex:1;background:${facturaFilter==='agua'?'#2E7D8C':'#fff'};color:${facturaFilter==='agua'?'#fff':'#2E7D8C'};border:1.5px solid #2E7D8C;border-radius:20px;padding:9px 12px;font-size:12px;font-family:monospace;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px">
+      <i class="ti ti-droplet" style="font-size:14px"></i> Eau
+    </button>
+  </div>`;
+
+  if(!filtered.length){
+    html+=`<div style="text-align:center;color:#8a9ab5;padding:3rem;font-family:monospace">${t('noFacturas')}</div>`;
+  }
+
+  filtered.forEach(f=>{
+    const[y,m]=f.month.split('-');
+    const label=new Date(y,m-1).toLocaleDateString(localeDate(),{month:'long',year:'numeric'});
+    const parPerson=active.length?Math.round(f.amount/active.length*100)/100:0;
+    const pagados=(f.pagos||[]).filter(p=>p.status==='paid').length;
+    const allPaid=pagados===active.length&&active.length>0;
+    const color=f.type==='electricidad'?'#D4A843':'#2E7D8C';
+    const icon=f.type==='electricidad'?'ti-bolt':'ti-droplet';
+
+    html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:0.75rem">
+      <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #F0F4FA;background:#FAFCFF">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:34px;height:34px;border-radius:10px;background:${color}18;display:flex;align-items:center;justify-content:center">
+            <i class="ti ${icon}" style="font-size:18px;color:${color}"></i>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:#1A2B4A;text-transform:capitalize">${label}</div>
+            <div style="font-size:10px;color:#8a9ab5;font-family:monospace">${f.amount} € total · ${parPerson} € / personne</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:10px;background:${allPaid?'#2E7D8C18':'#F0F4FA'};color:${allPaid?'#2E7D8C':'#8a9ab5'};padding:2px 8px;border-radius:10px;font-family:monospace">${pagados}/${active.length}</span>
+          <button onclick="deleteFacturaConfirm('${f.id}')" style="background:transparent;border:none;cursor:pointer;color:#7D2340;padding:3px"><i class="ti ti-trash" style="font-size:14px"></i></button>
+        </div>
+      </div>
+      <div style="padding:4px 14px 8px">`;
+
+    active.forEach((ten,i)=>{
+      const r=roomById(ten.room);
+      const pago=(f.pagos||[]).find(p=>p.tenantId===ten.id);
+      const isPaid=pago?.status==='paid';
+      const isLast=i===active.length-1;
+      html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;${isLast?'':'border-bottom:0.5px solid #F5F7FB'}">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:26px;height:26px;border-radius:50%;background:${r?.color}20;border:1px solid ${r?.color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${r?.color}">${ten.name[0]}</div>
+          <span style="font-size:12px;color:#1A2B4A;font-weight:600">${ten.name.split(' ')[0]}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:12px;font-weight:700;color:#1A2B4A;font-family:monospace">${parPerson} €</span>
+          ${isPaid
+            ? `<span style="font-size:10px;background:#2E7D8C18;color:#2E7D8C;padding:2px 8px;border-radius:10px;font-family:monospace">✓ Payé</span>`
+            : `<button onclick="pagarFactura('${f.id}','${ten.id}')" style="background:#2E7D8C;color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:10px;font-family:monospace;cursor:pointer;font-weight:700">✓</button>`}
+        </div>
+      </div>`;
+    });
+
+    html+=`</div>
+      <div style="padding:7px 14px;background:${allPaid?'#2E7D8C15':'#F4F7FC'};border-top:0.5px solid #F0F4FA;display:flex;justify-content:space-between">
+        <span style="font-size:10px;color:#8a9ab5;font-family:monospace">Encaissé : ${pagados*parPerson} €</span>
+        <span style="font-size:10px;color:${allPaid?'#2E7D8C':'#7D2340'};font-family:monospace;font-weight:700">${allPaid?'✓ Complet':'Reste : '+(f.amount-pagados*parPerson).toFixed(0)+' €'}</span>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('tab-facturas').innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// CLEANING
+// ═══════════════════════════════════════
+function renderCleaning(){
+  const week=getWeek()+cleanWeekOffset;
+  const lbl=cleanWeekOffset===0?'Cette semaine':cleanWeekOffset===1?'Sem. prochaine':cleanWeekOffset===-1?'Sem. dernière':`Sem. ${cleanWeekOffset>0?'+':''}${cleanWeekOffset}`;
+  const active=activeTenants();
+  const zones=Object.keys(CLEAN_TASKS);
+  const colors=['#D4A843','#2E508C'];
+  const icons=['🍳','🛋️'];
+
+  let html = `
+  <h1 class="page-title">${t('cleanTitle')}</h1>
+  <div style="display:flex;gap:8px;margin-bottom:1rem;align-items:center">
+    <button onclick="cleanWeekOffset--;renderCleaning()" style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:7px 13px;cursor:pointer;font-family:monospace;font-size:16px;color:#1A2B4A">‹</button>
+    <div style="flex:1;text-align:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px;font-family:monospace;font-size:12px;color:#1A2B4A;font-weight:600">${lbl} · Sem. ${week}</div>
+    <button onclick="cleanWeekOffset++;renderCleaning()" style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:7px 13px;cursor:pointer;font-family:monospace;font-size:16px;color:#1A2B4A">›</button>
+  </div>`;
+
+  zones.forEach((zone,zi)=>{
+    const color=colors[zi];
+    const tasks=CLEAN_TASKS[zone];
+    const assigned=active.length?active[(week+zi)%active.length]:null;
+    const ar=assigned?roomById(assigned.room):null;
+    const done=tasks.filter(t=>cleaning[`${zone}-${week}-${t}`]).length;
+    const allDone=done===tasks.length&&tasks.length>0;
+
+    html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:0.75rem">
+      <div style="height:3px;background:${color}"></div>
+      <div style="padding:12px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-size:14px;font-weight:700;color:${color}">${icons[zi]} ${zone}</div>
+          ${allDone?badge('✓ Terminé','#2E7D8C'):''}
+        </div>
+        ${assigned?`
+          <div style="display:flex;align-items:center;gap:8px;padding:8px;background:#F4F7FC;border-radius:10px;margin-bottom:10px">
+            <div style="width:32px;height:32px;border-radius:50%;background:${ar?.color}20;border:1.5px solid ${ar?.color};display:flex;align-items:center;justify-content:center;font-weight:700;color:${ar?.color};font-size:13px">${assigned.name[0]}</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#1A2B4A">${assigned.name}</div>
+              <div style="font-size:10px;color:#8a9ab5;font-family:monospace">${ar?.shortName||'—'}</div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-fill" style="background:${color};width:${tasks.length?Math.round(done/tasks.length*100):0}%"></div>
+          </div>
+          <div style="font-size:10px;color:#8a9ab5;font-family:monospace;margin-bottom:8px">${done}/${tasks.length} tâches</div>
+          ${tasks.map(task=>{
+            const isDone=cleaning[`${zone}-${week}-${task}`];
+            return `<div class="task-item" style="background:${isDone?color+'15':'transparent'}" onclick="toggleTask('${zone}','${week}','${task}')">
+              <div class="task-check" style="border-color:${isDone?color:'#ccc'};background:${isDone?color:'transparent'}">
+                ${isDone?`<i class="ti ti-check" style="color:#fff;font-size:11px"></i>`:''}
+              </div>
+              <span style="font-size:12px;color:${isDone?color:'#5B7FA6'};text-decoration:${isDone?'line-through':'none'}">${task}</span>
+            </div>`;
+          }).join('')}
+        `:`<div style="font-size:12px;color:#8a9ab5;font-style:italic;padding:8px 0">${t('noActiveTenants')}</div>`}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('tab-cleaning').innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════
+function renderCalendar(){
+  const sorted=[...tenants].sort((a,b)=>new Date(a.entryDate)-new Date(b.entryDate));
+  let html=`<h1 class="page-title">${t('calTitle')}</h1>`;
+
+  if(!sorted.length){
+    html+=`<div style="text-align:center;color:#8a9ab5;padding:3rem;font-family:monospace">${t('noTenantsReg')}</div>`;
+  }
+
+  sorted.forEach(ten=>{
+    const r=roomById(ten.room);
+    const d=daysUntil(ten.exitDate);
+    const exitColor=d!==null&&d<=30?'#7D2340':d!==null&&d<=60?'#D4A843':'#8a9ab5';
+    html+=`<div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:4px;border-radius:3px;align-self:stretch;background:${r?.color};flex-shrink:0;min-height:36px"></div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px;color:#1A2B4A">${ten.name}</div>
+          <div style="font-size:11px;color:${r?.color};font-family:monospace;margin-top:1px">${r?.name||'—'}</div>
+        </div>
+        ${statusBadge(ten.status)}
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;padding-left:14px">
+        <div style="display:flex;align-items:center;gap:5px">
+          <i class="ti ti-arrow-down-circle" style="font-size:13px;color:#2E7D8C"></i>
+          <span style="font-size:12px;color:#2E7D8C;font-family:monospace">${fmtDate(ten.entryDate)}</span>
+        </div>
+        ${ten.exitDate?`<div style="display:flex;align-items:center;gap:5px">
+          <i class="ti ti-arrow-up-circle" style="font-size:13px;color:${exitColor}"></i>
+          <span style="font-size:12px;color:${exitColor};font-family:monospace">${fmtDate(ten.exitDate)}${d!==null?` (${d>0?`dans ${d}j`:d===0?'Auj.':'Dépassé'})`:''}
+          </span>
+        </div>`:''}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('tab-calendar').innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// MODALS — TENANT
+// ═══════════════════════════════════════
+function openAddTenant(roomId){
+  const rid=roomId||ROOMS[0].id;
+  const room=ROOMS.find(r=>r.id===rid);
+  openModal(t('newTenant'), tenantForm({id:'',name:'',room:rid,phone:'',email:'',entryDate:'',exitDate:'',rent:room?.defaultRent||'',status:'active',notes:''}, false));
+}
+function openEditTenant(id){
+  const ten=tenants.find(x=>x.id===id); if(!ten) return;
+  openModal(t('editTenant'), tenantForm(ten, true));
+}
+function tenantForm(ten, isEdit){
+  const roomOpts=PIECES.map(p=>{
+    const lits=ROOMS.filter(r=>r.piece===p.id);
+    const opts=lits.map(r=>{
+      const occ=tenants.some(x=>x.room===r.id&&x.id!==ten.id&&x.status!=='ended'&&x.status!=='archived');
+      return `<option value="${r.id}" ${ten.room===r.id?'selected':''} ${occ&&!isEdit?'disabled':''}>${p.name} — Lit ${r.id.split('-')[1]} (${r.defaultRent} €)${occ?' ✗':''}</option>`;
+    }).join('');
+    return `<optgroup label="${p.name}">${opts}</optgroup>`;
+  }).join('');
+  const statusOpts=[['active',t('active')],['leaving',t('leaving')],['ended',t('ended')]].map(([v,l])=>`<option value="${v}" ${ten.status===v?'selected':''}>${l}</option>`).join('');
+  return `
+  <div class="form-group"><label class="form-label">${t('name')}</label><input class="form-input" id="f-name" value="${ten.name||''}" placeholder="Prénom Nom"></div>
+  <div class="form-group"><label class="form-label">${t('room')}</label><select class="form-select" id="f-room" onchange="autoFillRent(this.value)">${roomOpts}</select></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">${t('phone')}</label><input class="form-input" id="f-phone" type="tel" value="${ten.phone||''}" placeholder="+34..."></div>
+    <div class="form-group"><label class="form-label">${t('email')}</label><input class="form-input" id="f-email" type="email" value="${ten.email||''}"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">${t('entryDate')}</label><input class="form-input" type="date" id="f-entry" value="${ten.entryDate||''}"></div>
+    <div class="form-group"><label class="form-label">${t('exitDate')}</label><input class="form-input" type="date" id="f-exit" value="${ten.exitDate||''}"></div>
+  </div>
+  <div class="form-group"><label class="form-label">${t('rent')}</label><input class="form-input" type="number" id="f-rent" value="${ten.rent||''}"></div>
+  <div class="form-group"><label class="form-label">${t('status')}</label><select class="form-select" id="f-status">${statusOpts}</select></div>
+  <div class="form-group"><label class="form-label">${t('notes')}</label><textarea class="form-input form-textarea" id="f-notes">${ten.notes||''}</textarea></div>
+  <div style="display:flex;gap:0.7rem;justify-content:flex-end;margin-top:0.5rem">
+    <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
+    <button class="btn btn-navy" onclick="saveTenantForm('${ten.id}',${isEdit})">${isEdit?t('update'):t('save')}</button>
+  </div>`;
+}
+function autoFillRent(roomId){
+  const room=ROOMS.find(r=>r.id===roomId);
+  const inp=document.getElementById('f-rent');
+  if(room&&inp&&!inp.value) inp.value=room.defaultRent;
+}
+async function saveTenantForm(oldId, isEdit){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name) return alert(t('name')+' obligatoire');
+  const id=isEdit?oldId:'t_'+Date.now();
+  const ten={id, name, room:document.getElementById('f-room').value, phone:document.getElementById('f-phone').value, email:document.getElementById('f-email').value, entryDate:document.getElementById('f-entry').value, exitDate:document.getElementById('f-exit').value, rent:Number(document.getElementById('f-rent').value), status:document.getElementById('f-status').value, notes:document.getElementById('f-notes').value};
+  await saveTenant(ten);
+  if(!isEdit) await saveDeposit({tenantId:id, advance:ten.rent, advanceStatus:'held', advancePaidDate:'', fianza:ten.rent, fianzaStatus:'held', fianzaPaidDate:'', notes:''});
+  closeModal();
+}
+function confirmDelete(id){
+  const ten=tenants.find(x=>x.id===id);
+  openModal(t('archiveTitle'), `
+  <p style="color:#1A2B4A;margin-bottom:0.8rem;font-size:0.9rem;line-height:1.6">${t('archive')} <strong>${ten?.name||''}</strong> ?</p>
+  <div style="background:#EEF2F8;border-radius:10px;padding:0.75rem 1rem;margin-bottom:1.2rem;border:0.5px solid var(--border);font-size:0.8rem;color:#5B7FA6;line-height:1.6">
+    <i class="ti ti-info-circle" style="color:#1A2B4A"></i> ${t('archiveMsg')}
+  </div>
+  <div style="display:flex;gap:0.7rem;justify-content:flex-end">
+    <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
+    <button class="btn btn-navy" onclick="archiveTenant('${id}')">${t('archive')}</button>
+  </div>`);
+}
+
+// ═══════════════════════════════════════
+// MODALS — PAYMENT
+// ═══════════════════════════════════════
+function openPayment(tenantId){
+  const ten=tenants.find(x=>x.id===tenantId); if(!ten) return;
+  const statusOpts=[['paid',t('paid')],['late',t('late')],['pending',t('pending')]].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  openModal(t('paymentTitle'), `
+  <div style="background:#EEF2F8;border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-family:monospace;font-size:12px;color:#1A2B4A">
+    <strong>${ten.name}</strong> · ${roomById(ten.room)?.name||'—'} · ${ten.rent||0} €/mois
+  </div>
+  <div class="form-group"><label class="form-label">${t('month')}</label><input class="form-input" id="p-month" value="${currentMonth()}"></div>
+  <div class="form-group"><label class="form-label">${t('amount')}</label><input class="form-input" type="number" id="p-amount" value="${ten.rent||0}"></div>
+  <div class="form-group"><label class="form-label">${t('status')}</label><select class="form-select" id="p-status">${statusOpts}</select></div>
+  <div style="display:flex;gap:0.7rem;justify-content:flex-end;margin-top:0.5rem">
+    <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
+    <button class="btn btn-teal" onclick="savePaymentForm('${tenantId}')">${t('save')}</button>
+  </div>`);
+}
+async function quickPay(tenantId, month){
+  const ten=tenants.find(x=>x.id===tenantId); if(!ten) return;
+  await savePayment({id:`p_${tenantId}_${month}`, tenantId, month, amount:ten.rent||0, status:'paid', date:new Date().toISOString().slice(0,10)});
+}
+async function savePaymentForm(tenantId){
+  const month=document.getElementById('p-month').value;
+  const amount=Number(document.getElementById('p-amount').value);
+  const status=document.getElementById('p-status').value;
+  await savePayment({id:`p_${tenantId}_${month}`, tenantId, month, amount, status, date:status==='paid'?new Date().toISOString().slice(0,10):null});
+  closeModal();
+}
+
+// ═══════════════════════════════════════
+// MODALS — DEPOSIT
+// ═══════════════════════════════════════
+function openDeposit(tenantId){
+  const ten=tenants.find(x=>x.id===tenantId); if(!ten) return;
+  const garantie=ten.rent||0;
+  const room=ROOMS.find(r=>r.id===ten.room);
+  const d=deposits.find(x=>x.tenantId===tenantId)||{tenantId,advance:garantie,advanceStatus:'held',advancePaidDate:'',fianza:garantie,fianzaStatus:'held',fianzaPaidDate:'',notes:''};
+  const depOpts=s=>[['held',t('held')],['returned',t('returned')],['partial',t('partial')]].map(([v,l])=>`<option value="${v}" ${s===v?'selected':''}>${l}</option>`).join('');
+  openModal(t('depositTitle'), `
+  <div style="background:#EEF2F8;border-radius:10px;padding:10px 14px;margin-bottom:1rem;border:0.5px solid var(--border)">
+    <div style="font-size:11px;font-family:monospace;color:#8a9ab5;margin-bottom:3px">${room?.name||'—'}</div>
+    <div style="font-size:12px;color:#1A2B4A;font-family:monospace">${t('refRent')} : <strong>${garantie} €</strong> → garantie = <strong style="color:#7D2340">${garantie} €</strong></div>
+  </div>
+  <div style="color:#1A2B4A;font-size:12px;font-weight:700;margin-bottom:0.7rem;font-family:monospace">${t('mesAnticipo').toUpperCase()}</div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">${t('amount')}</label><input class="form-input" type="number" id="d-adv" value="${d.advance||0}"></div>
+    <div class="form-group"><label class="form-label">Date reçu</label><input class="form-input" type="date" id="d-advdate" value="${d.advancePaidDate||''}"></div>
+  </div>
+  <div class="form-group"><label class="form-label">${t('advanceStatus')}</label><select class="form-select" id="d-advstatus">${depOpts(d.advanceStatus)}</select></div>
+  <div style="border-top:1px solid #EEF2F8;margin:0.9rem 0"></div>
+  <div style="color:#1A2B4A;font-size:12px;font-weight:700;margin-bottom:0.7rem;font-family:monospace">${t('fianza').toUpperCase()}</div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">${t('amount')}</label><input class="form-input" type="number" id="d-fia" value="${d.fianza||0}"></div>
+    <div class="form-group"><label class="form-label">Date reçu</label><input class="form-input" type="date" id="d-fiadate" value="${d.fianzaPaidDate||''}"></div>
+  </div>
+  <div class="form-group"><label class="form-label">${t('depositStatus')}</label><select class="form-select" id="d-fiastatus">${depOpts(d.fianzaStatus)}</select></div>
+  <div class="form-group"><label class="form-label">${t('notes')}</label><textarea class="form-input form-textarea" id="d-notes">${d.notes||''}</textarea></div>
+  <div style="display:flex;gap:0.7rem;justify-content:flex-end;margin-top:0.5rem">
+    <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
+    <button class="btn btn-navy" onclick="saveDepositForm('${tenantId}')">${t('save')}</button>
+  </div>`);
+}
+async function saveDepositForm(tenantId){
+  await saveDeposit({tenantId, advance:Number(document.getElementById('d-adv').value), advancePaidDate:document.getElementById('d-advdate').value, advanceStatus:document.getElementById('d-advstatus').value, fianza:Number(document.getElementById('d-fia').value), fianzaPaidDate:document.getElementById('d-fiadate').value, fianzaStatus:document.getElementById('d-fiastatus').value, notes:document.getElementById('d-notes').value});
+  closeModal();
+}
+
+// ═══════════════════════════════════════
+// MODALS — ÉTAT / WHATSAPP
+// ═══════════════════════════════════════
+function openEtatLieux(tenantId){
+  const ten=tenants.find(x=>x.id===tenantId); if(!ten) return;
+  openModal('État des lieux', `
+  <div style="background:#F4F7FC;border-radius:10px;padding:1rem;margin-bottom:1rem;border:0.5px solid var(--border)">
+    <div style="font-size:10px;font-family:monospace;color:#8a9ab5;margin-bottom:6px">NOTES</div>
+    <div style="color:#1A2B4A;line-height:1.7;font-size:0.9rem">${ten.etatLieux||t('noNotes')}</div>
+  </div>
+  <div style="font-size:11px;color:#8a9ab5;font-family:monospace">${t('entry')}: ${fmtDate(ten.entryDate)} · ${t('exitPrev')}: ${fmtDate(ten.exitDate)}</div>
+  <div style="display:flex;justify-content:flex-end;margin-top:1rem">
+    <button class="btn btn-ghost" onclick="closeModal()">${t('close')}</button>
+  </div>`);
+}
+
+function openWhatsApp(tenantId){
+  const ten=tenants.find(x=>x.id===tenantId); if(!ten) return;
+  const mon=new Date().toLocaleDateString(localeDate(),{month:'long',year:'numeric'});
+  const bankInfo={nom:'Votre Nom',banque:'Votre banque',iban:'ES00 0000 0000 0000'};
+  const roomName=ROOMS.find(r=>r.id===ten.room)?.name||'';
+  const msgTxt=`Hola ${ten.name} 👋\n\nTu alquiler de ${ten.rent}€ vence en ${mon}.\n\nTransferencia:\nNombre: ${bankInfo.nom}\nBanco: ${bankInfo.banque}\nIBAN: ${bankInfo.iban}\nImporte: ${ten.rent} €\nConcepto: Alquiler ${mon} - ${roomName}\n\n¡Gracias! 🏠`;
+  const msg=encodeURIComponent(msgTxt);
+  openModal('WhatsApp — '+ten.name, `
+  <div style="background:#F4F7FC;border-radius:10px;padding:1rem;margin-bottom:1rem;font-size:0.82rem;color:#1A2B4A;line-height:1.8;white-space:pre-wrap;border:0.5px solid var(--border);font-family:monospace">${msgTxt}</div>
+  <div style="display:flex;gap:0.7rem;justify-content:flex-end">
+    <button class="btn btn-ghost" onclick="closeModal()">${t('close')}</button>
+    <a href="https://wa.me/${(ten.phone||'').replace(/\D/g,'')}?text=${msg}" target="_blank">
+      <button class="wa-btn"><i class="ti ti-brand-whatsapp"></i> Envoyer</button>
+    </a>
+  </div>`);
+}
+
+// ═══════════════════════════════════════
+// MODALS — FACTURA
+// ═══════════════════════════════════════
+function openNewFactura(){
+  openModal('Nouvelle facture', `
+  <div class="form-group"><label class="form-label">Type</label>
+    <select class="form-select" id="fac-type">
+      <option value="electricidad">⚡ Électricité</option>
+      <option value="agua">💧 Eau</option>
+    </select>
+  </div>
+  <div class="form-group"><label class="form-label">Mois (AAAA-MM)</label><input class="form-input" id="fac-month" value="${currentMonth()}"></div>
+  <div class="form-group"><label class="form-label">Montant total (€)</label><input class="form-input" type="number" id="fac-amount" placeholder="Ex: 120"></div>
+  <div style="display:flex;gap:0.7rem;justify-content:flex-end;margin-top:0.5rem">
+    <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
+    <button class="btn btn-navy" onclick="saveNewFactura()">${t('save')}</button>
+  </div>`);
+}
+async function saveNewFactura(){
+  const type=document.getElementById('fac-type').value;
+  const month=document.getElementById('fac-month').value;
+  const amount=Number(document.getElementById('fac-amount').value);
+  if(!amount||!month) return alert('Remplir tous les champs');
+  await saveFactura({id:`fac_${type}_${month}_${Date.now()}`, type, month, amount, pagos:[]});
+  facturaFilter=type; closeModal();
+}
+async function pagarFactura(facturaId, tenantId){
+  const f=facturas.find(x=>x.id===facturaId); if(!f) return;
+  const pagos=[...(f.pagos||[])];
+  const idx=pagos.findIndex(p=>p.tenantId===tenantId);
+  if(idx>=0) pagos[idx]={...pagos[idx],status:'paid'};
+  else pagos.push({tenantId,status:'paid'});
+  await saveFactura({...f,pagos});
+}
+function deleteFacturaConfirm(id){
+  const f=facturas.find(x=>x.id===id);
+  openModal('Supprimer facture', `
+  <p style="color:#1A2B4A;margin-bottom:1.2rem;font-size:0.9rem;line-height:1.6">Supprimer la facture <strong>${f?.type==='electricidad'?'Électricité':'Eau'} ${f?.month}</strong> ? Cette action est irréversible.</p>
+  <div style="display:flex;gap:0.7rem;justify-content:flex-end">
+    <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
+    <button class="btn" style="background:#7D2340;color:#fff;border-color:#7D2340;border-radius:20px" onclick="deleteFactura('${id}');closeModal()">Supprimer</button>
+  </div>`);
+}
+
+// ═══════════════════════════════════════
+// CLEANING TOGGLE
+// ═══════════════════════════════════════
+async function toggleTask(zone, week, task){
+  const key=`${zone}-${week}-${task}`;
+  cleaning[key]=!cleaning[key];
+  await saveCleaning(cleaning);
+  renderCleaning();
+}
+
+// ═══════════════════════════════════════
+// DOCUMENTS
+// ═══════════════════════════════════════
+async function uploadDoc(tenantId, input){
+  const file=input.files[0]; if(!file) return;
+  if(file.size>1.5*1024*1024){ alert('Max 1.5 MB'); input.value=''; return; }
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    const existing=documents[tenantId]||[];
+    const newDoc={id:'d_'+Date.now(),name:file.name,type:file.type,size:file.size,date:new Date().toLocaleDateString(localeDate()),data:e.target.result};
+    const updated=[...existing,newDoc];
+    documents[tenantId]=updated;
+    await saveDocuments(tenantId,updated);
+    renderTenants();
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+function viewDoc(tenantId, docId){
+  const doc=(documents[tenantId]||[]).find(d=>d.id===docId); if(!doc) return;
+  const win=window.open('');
+  if(doc.type?.startsWith('image/')) win.document.write(`<html><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="${doc.data}" style="max-width:100%;max-height:100vh"></body></html>`);
+  else win.document.write(`<html><body style="margin:0"><embed src="${doc.data}" width="100%" height="100%" style="position:fixed;inset:0"></body></html>`);
+}
+function downloadDoc(tenantId, docId){
+  const doc=(documents[tenantId]||[]).find(d=>d.id===docId); if(!doc) return;
+  const a=document.createElement('a'); a.href=doc.data; a.download=doc.name; a.click();
+}
+async function deleteDoc(tenantId, docId){
+  if(!confirm('Supprimer ce document ?')) return;
+  const docs=(documents[tenantId]||[]).filter(d=>d.id!==docId);
+  documents[tenantId]=docs;
+  await saveDocuments(tenantId,docs);
+  renderTenants();
+}
+
+// ═══════════════════════════════════════
+// PDF — DEPOSIT
+// ═══════════════════════════════════════
+function exportDepositPDF(tenantId){
+  const ten=tenants.find(x=>x.id===tenantId);
+  const d=deposits.find(x=>x.tenantId===tenantId);
+  const r=roomById(ten?.room);
+  if(!ten||!d) return;
+  const html=`<html><head><meta charset="UTF-8"><style>
+    body{font-family:Georgia,serif;color:#2C1810;padding:40px;background:#FAF6F1}
+    .header{background:#1A2B4A;color:#FAF6F1;padding:28px;border-radius:10px;margin-bottom:28px;text-align:center}
+    .title{font-size:26px;font-weight:bold;letter-spacing:4px}.subtitle{font-size:11px;color:#C9A96E;letter-spacing:6px;margin-top:4px}
+    .section{background:white;border:1px solid #B5D4F4;border-radius:10px;padding:22px;margin-bottom:16px}
+    .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #EEF2F8}
+    .label{color:#5B7FA6;font-size:13px}.value{font-weight:bold;color:#042C53;font-size:13px}
+    .amount{font-size:22px;font-weight:bold;color:#1A2B4A}
+    .footer{text-align:center;color:#8a9ab5;font-size:11px;margin-top:28px}
+    h3{color:#1A2B4A;margin:0 0 12px;font-size:14px}
+  </style></head><body>
+    <div class="header"><div class="title">MAYNEST</div><div class="subtitle">GARANTIES</div></div>
+    <div class="section">
+      <div class="row"><span class="label">Nom</span><span class="value">${ten.name}</span></div>
+      <div class="row"><span class="label">Chambre</span><span class="value">${r?.name||'—'}</span></div>
+      <div class="row"><span class="label">Téléphone</span><span class="value">${ten.phone||'—'}</span></div>
+      <div class="row"><span class="label">Entrée</span><span class="value">${fmtDate(ten.entryDate)}</span></div>
+      <div class="row"><span class="label">Sortie prévue</span><span class="value">${fmtDate(ten.exitDate)}</span></div>
+      <div class="row"><span class="label">Loyer mensuel</span><span class="value">${ten.rent||0} €</span></div>
+    </div>
+    <div class="section"><h3>Mois d'avance</h3><div class="amount">${d.advance||0} €</div><p style="color:#8a9ab5;font-size:12px;margin:4px 0">${d.advanceStatus||'held'}</p>${d.advancePaidDate?`<p style="color:#8a9ab5;font-size:12px">Reçu le ${fmtDate(d.advancePaidDate)}</p>`:''}</div>
+    <div class="section"><h3>Caution</h3><div class="amount">${d.fianza||0} €</div><p style="color:#8a9ab5;font-size:12px;margin:4px 0">${d.fianzaStatus||'held'}</p>${d.fianzaPaidDate?`<p style="color:#8a9ab5;font-size:12px">Reçu le ${fmtDate(d.fianzaPaidDate)}</p>`:''}</div>
+    <div class="section"><div class="row"><span class="label">Total garanties</span><span class="value" style="color:#7D2340;font-size:16px">${(d.advance||0)+(d.fianza||0)} €</span></div></div>
+    <div class="footer">Document généré le ${new Date().toLocaleDateString('fr-FR')} · MayNest</div>
+  </body></html>`;
+  const win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(()=>win.print(),500);
+}
+
+// ═══════════════════════════════════════
+// MODAL CORE
+// ═══════════════════════════════════════
+function openModal(title, body){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').innerHTML=body;
+  document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal(){ document.getElementById('modal').classList.add('hidden'); }
+function handleOverlayClick(e){ if(e.target.id==='modal') closeModal(); }
+
+// ═══════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════
+window.addEventListener('firebase-ready', ()=>{
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  // Apply lang
+  const sub = currentLang==='fr'?'GESTION LOCATIVE · 11 LITS':currentLang==='en'?'RENTAL MGMT · 11 BEDS':'GESTIÓN · 11 CAMAS';
+  document.getElementById('header-sub').textContent=sub;
+  renderDashboard();
+  updateFreeBadges();
+  loadData();
+});
+</script>
+</body>
+</html>
